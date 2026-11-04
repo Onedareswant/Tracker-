@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Reseller Tax Tracker</title>
+<style>
+:root{--bg:#fafaf7;--card:#fff;--tx:#1f2421;--mut:#6b726d;--bd:#e3e5df;--ac:#2f7d5b;--acx:#fff;--neg:#b3412f;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#151816;--card:#1e2220;--tx:#eceee9;--mut:#9aa39c;--bd:#2f3532;--ac:#4fb68a;--acx:#0d1a14;--neg:#e47b69}}
+:root[data-theme="dark"]{--bg:#151816;--card:#1e2220;--tx:#eceee9;--mut:#9aa39c;--bd:#2f3532;--ac:#4fb68a;--acx:#0d1a14;--neg:#e47b69}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.4 -apple-system,system-ui,"Segoe UI",Roboto,sans-serif}
+.w{max-width:760px;margin:0 auto;padding:14px}
+h1{font-size:20px;margin:4px 0 12px}h2{font-size:16px;margin:18px 0 8px}
+nav{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}nav button{flex:1 1 30%}
+nav button{flex:1;padding:10px 2px;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:10px;font-size:13px}
+nav button.on{background:var(--ac);color:var(--acx);border-color:var(--ac)}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px;margin-bottom:10px}
+.g{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+label{display:block;font-size:12px;color:var(--mut)}
+input,select,textarea{width:100%;padding:9px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);font:inherit;font-size:16px}
+.f{grid-column:1/-1}
+.b{padding:10px 14px;border-radius:10px;border:1px solid var(--ac);background:var(--ac);color:var(--acx);font-size:15px}
+.b.s{background:none;color:var(--ac)}.b.x{border-color:var(--neg);color:var(--neg);background:none;padding:6px 10px;font-size:13px}
+.row{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.mut{color:var(--mut);font-size:13px}.pos{color:var(--ac)}.neg{color:var(--neg)}
+.tag{font-size:11px;padding:2px 7px;border-radius:99px;border:1px solid var(--bd);color:var(--mut)}
+.stat{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--bd)}
+.stat:last-child{border:0}.big{font-weight:700;font-size:17px}
+.ov{overflow-x:auto}.hide{display:none}
+.chip{padding:8px 12px;border-radius:99px;border:1px solid var(--bd);background:var(--bg);color:var(--tx);font-size:14px}.chip.on{background:var(--ac);color:var(--acx);border-color:var(--ac)}
+</style>
+</head>
+<body>
+<div class="w">
+<h1>Reseller Tax Tracker</h1>
+<nav id="nav"></nav>
+<div class="mut" id="sy" style="text-align:right;font-size:12px"></div>
+<div id="app"></div>
+<p class="mut">Data saves in this browser and, once connected, in your Google Sheet. This is a record-keeping aid, not tax advice; confirm figures with a tax pro.</p>
+</div>
+<script>
+var KEY="resellerTax1",PLATS=["eBay","Depop","Vinted","Poshmark","Whatnot","Other"],ITYPES=["Clothes","Figurines","Toys","Pictures / art","Home goods","Other"],ACQ=["Bought","Free / gift","Already owned"],
+CATS=["Shipping supplies","Postage (bought outside sales)","Platform / listing fees","Photo & lighting gear","Software & subscriptions","Storage / rent","Advertising","Laundromat","Cleaning & repair supplies","Sourcing fees","Other"];
+var S={items:[],exp:[],miles:[],rate:0.70,startOdo:66903,startDate:"2026-11-01"},tab="inv",yr=new Date().getFullYear(),edit=null;
+try{var raw=localStorage.getItem(KEY);if(raw)S=Object.assign(S,JSON.parse(raw))}catch(e){}
+var CK="resellerSheetCfg",C={},pt=null;
+try{C=JSON.parse(localStorage.getItem(CK))||{}}catch(e){}
+function say2(t){var b=document.getElementById("sy");if(b)b.textContent=t}
+function api(b){return fetch(C.url,{method:"POST",redirect:"follow",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(Object.assign({token:C.token},b))}).then(function(r){return r.json()})}
+function push(){if(!C.url)return;say2("Saving…");clearTimeout(pt);pt=setTimeout(function(){api({action:"save",state:S}).then(function(r){say2(r.ok?"Saved to Google Sheet "+new Date().toLocaleTimeString():"Not saved: "+(r.error||"error"))}).catch(function(){say2("Offline. Will save on your next change")})},1200)}
+function pull(){if(!C.url)return;say2("Loading…");api({action:"load"}).then(function(r){if(!r.ok){say2("Sheet error: "+(r.error||""));return}var d=r.state;if(d&&(d._t||0)>(S._t||0)){S=Object.assign({items:[],exp:[],miles:[],rate:0.70},d);try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}render();say2("Loaded from Google Sheet")}else{say2("Synced");if(!d||(S._t||0)>(d._t||0))push()}}).catch(function(){say2("Offline. Using this device’s copy")})}
+function conn(){C={url:$("c_u").value.trim(),token:$("c_t").value};try{localStorage.setItem(CK,JSON.stringify(C))}catch(e){}pull()}
+function save(){S._t=Date.now();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){alert("Phone storage is full. Remove some photos.")}push()}
+function $(i){return document.getElementById(i)}
+window.alert=function(t){var b=$("tb");if(!b){b=document.createElement("div");b.id="tb";b.style.cssText="position:fixed;left:12px;right:12px;bottom:calc(14px + env(safe-area-inset-bottom,0px));background:var(--tx);color:var(--bg);padding:12px 14px;border-radius:10px;z-index:9;font-size:14px";document.body.appendChild(b)}b.textContent=t;b.style.display="block";clearTimeout(b._t);b._t=setTimeout(function(){b.style.display="none"},4000)};
+function n(v){v=parseFloat(v);return isNaN(v)?0:v}
+function m(v){return (v<0?"-":"")+"$"+Math.abs(v).toFixed(2)}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,5)}
+function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function today(){return new Date().toISOString().slice(0,10)}
+function profit(i){return n(i.price)-n(i.cost)-n(i.fees)-n(i.ship)}
+function yrOf(d){return d?parseInt(d.slice(0,4)):null}
+function opts(a,v){return a.map(function(x){return '<option'+(x===v?' selected':'')+'>'+x+'</option>'}).join("")}
+function nav(){var t=[["inv","Inventory"],["exp","Expenses"],["mil","Mileage"],["plt","Platforms"],["rcp","Receipts"],["rep","Tax report"]];
+$("nav").innerHTML=t.map(function(x){return '<button class="'+(tab===x[0]?"on":"")+'" onclick="go(\''+x[0]+'\')">'+x[1]+'</button>'}).join("")}
+function go(t){tab=t;edit=null;render()}
+function render(){mig();snap();nav();$("app").innerHTML={inv:inv,exp:exps,mil:mil,plt:plt,rcp:rcp,rep:rep}[tab]()}
+
+function inv(){var e=edit&&S.items.filter(function(i){return i.id===edit})[0]||{};if(edit&&PHid!==edit){PH=e.photo||"";PHid=edit}if(!edit&&PHid!==null){PH="";PHid=null}
+var h='<div class="card"><b>Bulk haul cost helper</b><div class="g">'+
+'<div><label>Total paid ($)</label><input type="number" step="0.01" inputmode="decimal" id="h_t" value="'+esc(H.t)+'" oninput="hv()"></div>'+
+'<div><label>Items you’ll list</label><input type="number" inputmode="numeric" id="h_n" value="'+esc(H.c)+'" oninput="hv()"></div></div>'+
+'<p class="mut" id="h_r">Average cost per item: '+(hav()?'$'+hav():'—')+'. It fills “Cost paid” below for each new item.</p></div>'+
+'<div class="card"><div class="g">'+
+'<div class="f"><label>'+(e.id?"Editing this item. Change anything, then tap Update item":"Item (title)")+'</label><input id="a_name" value="'+esc(e.name)+'" placeholder="e.g. Woodland buffalo plaid flannel, M"></div>'+
+'<div class="f"><label>Photo (optional)</label><input type="file" accept="image/*" id="a_file" onchange="pickPhoto(this)"><div id="a_pv">'+pvh()+'</div></div>'+
+'<div><label>Category (bin)</label><select id="a_cat">'+opts(ITYPES,e.cat||ITYPES[0])+'</select></div>'+
+'<div><label>SKU # (auto, 0001–2000)</label><input id="a_sku" value="'+esc(e.id?e.sku:nextSku(ITYPES[0]))+'"></div>'+
+'<div class="f"><label>Bin (clothes)</label><select id="a_bn"><option value="">No bin</option>'+BINS.map(function(b){return '<option value="'+b[0]+'"'+(e.bn===b[0]?' selected':'')+'>Bin '+b[1]+': '+b[0]+'</option>'}).join("")+'</select></div>'+
+'<div class="f"><label>Extra location note (optional)</label><input id="a_bin" value="'+esc(e.bin)+'" placeholder="e.g. Bin 3, Shelf B"></div>'+
+pchips(e.plat)+
+'<div class="f"><label>How you got it</label><select id="a_acq" onchange="acqch()">'+opts(ACQ,e.acq||"Bought")+'</select></div>'+
+'<div><label>Where from / who gave it</label><input id="a_src" value="'+esc(e.src)+'" placeholder="Goodwill, estate sale…"></div>'+
+'<div><label>Date acquired (optional)</label><input type="date" id="a_bd" value="'+(e.id?esc(e.bd):today())+'"><button type="button" class="b s" style="margin-top:6px;padding:6px 10px;font-size:13px" onclick="$(\'a_bd\').value=\'\'">No date</button></div>'+
+'<div><label>Cost paid ($)</label><input type="number" step="0.01" inputmode="decimal" id="a_cost" value="'+esc(e.cost!=null&&e.cost!==""?e.cost:hav())+'"></div>'+
+(e.sd?'<div><label>Date sold</label><input type="date" id="a_sd" value="'+esc(e.sd)+'"></div>'+
+sochips("a_so",PLATS,e.so||"")+
+'<div><label>Sale price ($)</label><input type="number" step="0.01" inputmode="decimal" id="a_price" value="'+esc(e.price)+'"></div>'+
+'<div><label>Platform fees ($)</label><input type="number" step="0.01" inputmode="decimal" id="a_fees" value="'+esc(e.fees)+'"></div>'+
+'<div><label>Shipping you paid ($)</label><input type="number" step="0.01" inputmode="decimal" id="a_ship" value="'+esc(e.ship)+'"></div>':'')+
+'<div class="f"><label>Notes (buyer, destination, condition)</label><input id="a_note" value="'+esc(e.note)+'"></div>'+
+'</div><p><button class="b" onclick="saveItem()">'+(e.id?"Update item":"Add item")+'</button> '+(e.id?'<button class="b s" onclick="go(\'inv\')">Cancel</button>':'')+'</p></div>';
+var L=S.items.slice().sort(function(a,b){return (b.bd||"")>(a.bd||"")?1:-1});
+setFK();h+='<h2>'+L.length+' items</h2>';
+h+='<div class="card"><b>Bins</b> <span class="mut">(tap a bin to see what\u2019s in it)</span><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">'+BINS.map(function(b){var c=S.items.filter(function(i){return !i.sd&&i.bn===b[0]}).length;return '<button type="button" class="chip bc'+(FB===b[0]?' on':'')+'" data-c="'+b[0]+'" onclick="bpick(this)">Bin '+b[1]+': '+b[0]+' ('+c+')</button>'}).join("")+'</div></div>';
+h+='<div class="card"><div class="g"><div class="f"><label>Find an item (title, SKU, bin)</label><input id="f_q" value="'+esc(FQ)+'" placeholder="Type 1 for SKU 0001, or a title, bin…" oninput="filt()"></div><div><label>Category</label><select id="f_c" onchange="filt()"><option value="">All</option>'+ITYPES.map(function(x){return '<option'+(FC===x?' selected':'')+'>'+x+'</option>'}).join("")+'</select></div><div><label>Show</label><select id="f_s" onchange="filt()"><option value="">All</option><option value="stock"'+(FS==="stock"?' selected':'')+'>In stock</option><option value="sold"'+(FS==="sold"?' selected':'')+'>Sold</option></select></div></div></div>';
+L.forEach(function(i){var sold=!!i.sd,kk=/^\d+$/.test(i.sku||"")?String(+i.sku):"",qs=[i.name,i.sku,i.bin,binOf(i.bn)?"bin "+binOf(i.bn):"",i.cat,i.plat,i.src,i.note].join(" ").toLowerCase();
+h+='<div class="card it" data-q="'+esc(qs)+'" data-c="'+esc(i.cat||"Clothing")+'" data-s="'+(sold?"sold":"stock")+'" data-b="'+esc(i.bn||"")+'" data-k="'+kk+'"'+(fm(qs,i.cat||"Clothes",sold?"sold":"stock",i.bn||"",kk)?'':' style="display:none"')+'><div class="row"><div>'+(i.photo?'<img src="'+i.photo+'" style="width:64px;height:64px;object-fit:cover;border-radius:8px;float:left;margin-right:10px">':'')+'<b>'+esc(i.name||"Untitled")+'</b><div class="mut">'+esc(i.sku?"#"+i.sku+" · ":"")+esc((binOf(i.bn)?"Bin "+binOf(i.bn)+" · ":"")+(i.bin?i.bin+" · ":""))+esc((i.cat||"Clothing")+" · ")+esc(i.plat)+" · "+(i.acq&&i.acq!=="Bought"?esc(i.acq)+(i.bd?" "+esc(i.bd):""):"bought "+esc(i.bd))+(i.src?" at "+esc(i.src):"")+'</div></div>'+
+'<span class="tag">'+(sold?"Sold":"In stock")+'</span></div>'+
+'<div class="mut">Cost '+m(n(i.cost))+(sold?' · Sold '+m(n(i.price))+(i.so?' on '+esc(i.so):'')+' · Fees '+m(n(i.fees))+' · Ship '+m(n(i.ship)):'')+'</div>'+
+(sold?'<div class="'+(profit(i)>=0?"pos":"neg")+'"><b>Profit '+m(profit(i))+'</b></div>':'')+
+'<p>'+(sold||sell===i.id?'':'<button class="b" onclick="sell=\''+i.id+'\';render()">Mark sold</button> ')+'<button class="b s" onclick="edit=\''+i.id+'\';sell=null;render();goTop()">Edit</button> <button class="b x" onclick="delItem(\''+i.id+'\')">'+(dl===i.id?"Tap again to delete":"Delete")+'</button></p>'+(sell===i.id&&!sold?sf(i):'')+'</div>'});
+return h}
+var H={t:"",c:""};
+function hav(){var t=n(H.t),c=n(H.c);return t>0&&c>0?(Math.round(t/c*100)/100).toFixed(2):""}
+function hv(){H.t=$("h_t").value;H.c=$("h_n").value;var a=hav();$("h_r").textContent="Average cost per item: "+(a?"$"+a:"—")+". It fills “Cost paid” below for each new item.";if(!edit&&a)$("a_cost").value=a}
+function plats(v){return (v||"").split(",").map(function(s){return s.trim()}).filter(Boolean)}
+function pchips(v){var a=plats(v);return '<div class="f"><label>Platforms (tap to select)</label><div id="a_pc" style="display:flex;flex-wrap:wrap;gap:6px">'+
+'<button type="button" class="chip pre'+(pm(a,["eBay","Depop","Vinted","Poshmark"])?' on':'')+'" data-s="eBay,Depop,Vinted,Poshmark" onclick="pset(this)">All platforms</button>'+
+'<button type="button" class="chip pre'+(pm(a,["Depop","eBay"])?' on':'')+'" data-s="Depop,eBay" onclick="pset(this)">Depop + eBay</button>'+
+PLATS.map(function(p){return '<button type="button" class="chip pc'+(a.indexOf(p)>-1?' on':'')+'" data-p="'+p+'" onclick="ptog(this)">'+p+'</button>'}).join("")+
+'</div><input type="hidden" id="a_plat" value="'+esc(a.join(", "))+'"></div>'}
+function sochips(id,list,v){return '<div class="f"><label>Sold on (tap to select)</label><div id="'+id+'c" style="display:flex;flex-wrap:wrap;gap:6px">'+list.map(function(p){return '<button type="button" class="chip'+(p===v?' on':'')+'" data-p="'+esc(p)+'" onclick="sopick(\''+id+'\',this)">'+esc(p)+'</button>'}).join("")+'</div><input type="hidden" id="'+id+'" value="'+esc(v)+'"></div>'}
+function sopick(id,b){var on=b.classList.contains("on");document.querySelectorAll("#"+id+"c .chip").forEach(function(c){c.classList.remove("on")});if(!on)b.classList.add("on");$(id).value=on?"":b.getAttribute("data-p")}
+function acqch(){var a=$("a_acq").value;if(a==="Bought"){if(!$("a_bd").value)$("a_bd").value=today();if($("a_cost").value==="0")$("a_cost").value=hav()}else{$("a_bd").value="";$("a_cost").value="0"}}
+function pm(a,s){return a.length===s.length&&s.every(function(x){return a.indexOf(x)>-1})}
+function psync(){var a=[];document.querySelectorAll("#a_pc .pc.on").forEach(function(b){a.push(b.getAttribute("data-p"))});$("a_plat").value=a.join(", ");document.querySelectorAll("#a_pc .pre").forEach(function(b){b.classList.toggle("on",pm(a,b.getAttribute("data-s").split(",")))})}
+function ptog(b){b.classList.toggle("on");psync()}
+function pset(b){var s=b.getAttribute("data-s").split(","),on=b.classList.contains("on");document.querySelectorAll("#a_pc .pc").forEach(function(c){c.classList.toggle("on",!on&&s.indexOf(c.getAttribute("data-p"))>-1)});psync()}
+var sell=null;
+function sf(i){return '<div class="g" style="margin-top:8px">'+
+sochips("s_o",plats(i.plat).length?plats(i.plat):PLATS,plats(i.plat).length===1?plats(i.plat)[0]:"")+
+'<div><label>Date sold</label><input type="date" id="s_d" value="'+today()+'"></div>'+
+'<div><label>Sale price ($)</label><input type="number" step="0.01" inputmode="decimal" id="s_p"></div>'+
+'<div><label>Platform fees ($)</label><input type="number" step="0.01" inputmode="decimal" id="s_f"></div>'+
+'<div><label>Shipping you paid ($)</label><input type="number" step="0.01" inputmode="decimal" id="s_s"></div></div>'+
+'<p><button class="b" onclick="saveSale(\''+i.id+'\')">Save sale</button> <button class="b s" onclick="sell=null;render()">Cancel</button></p>'}
+function saveSale(id){var p=$("s_p").value,d=$("s_d").value;if(p===""||!d||!$("s_o").value){alert("Enter the platform sold on, date sold and sale price");return}
+S.items.forEach(function(i){if(i.id===id){i.sd=d;i.so=$("s_o").value;i.price=p;i.fees=$("s_f").value;i.ship=$("s_s").value}});sell=null;save();render()}
+function saveItem(){var ex=S.items.filter(function(i){return i.id===edit})[0]||{};var o={id:edit||uid()};["name","sku","cat","bn","bin","acq","plat","bd","src","cost","sd","so","price","fees","ship","note"].forEach(function(k){var el=$("a_"+k);o[k]=el?el.value:(ex[k]==null?"":ex[k])});
+o.photo=PH;if(!o.name.trim()&&!o.photo){alert("Add a title or a photo");return}
+if(edit)S.items=S.items.map(function(i){return i.id===edit?o:i});else S.items.push(o);
+edit=null;PH="";PHid=null;save();render()}
+var dl=null;
+function delItem(id){if(dl!==id){dl=id;render();return}dl=null;S.items=S.items.filter(function(i){return i.id!==id});save();render()}
+
+function exps(){var h='<div class="card"><div class="g">'+
+'<div><label>Date</label><input type="date" id="e_d" value="'+today()+'"></div>'+
+'<div><label>Amount ($)</label><input type="number" step="0.01" inputmode="decimal" id="e_a"></div>'+
+'<div class="f"><label>Category</label><select id="e_c">'+opts(CATS)+'</select></div>'+
+'<div class="f"><label>Description / vendor</label><input id="e_n" placeholder="Poly mailers, Amazon"></div></div>'+
+'<p><button class="b" onclick="addExp()">Add expense</button></p></div>';
+S.exp.slice().sort(function(a,b){return a.d<b.d?1:-1}).forEach(function(x){
+h+='<div class="card"><div class="row"><div><b>'+m(n(x.a))+'</b> · '+esc(x.c)+'<div class="mut">'+esc(x.d)+' · '+esc(x.n)+'</div></div><button class="b x" onclick="delE(\''+x.id+'\')">Delete</button></div></div>'});
+return h}
+function addExp(){var a=n($("e_a").value);if(!a){alert("Enter an amount");return}
+S.exp.push({id:uid(),d:$("e_d").value,a:a,c:$("e_c").value,n:$("e_n").value});save();render()}
+function delE(id){S.exp=S.exp.filter(function(x){return x.id!==id});save();render()}
+
+var MT=["Business","Personal","Commute"];
+function ty(x){return x.t||"Business"}
+function rt(d){return d>="2026-07-01"?0.76:0.725}
+function r1(v){return Math.round(v*10)/10}
+function trips(){return S.miles.slice().sort(function(a,b){return a.d<b.d?-1:a.d>b.d?1:(a.id<b.id?-1:1)})}
+function curOdo(){var o=S.startOdo;trips().forEach(function(x){if(x.d>=S.startDate)o=x.e!=null?x.e:o+x.m});return o}
+function mcalc(){var o=$("m_o").value,v=$("m_m").value;if(o!==""){var e=n(o);return{m:r1(e-curOdo()),e:e}}if(v!=="")return{m:n(v),e:null};return null}
+function mpv(){var c=mcalc();$("m_pv").textContent=c?(c.m>0?"This trip: "+c.m+" mi":"Odometer must be above "+Math.round(curOdo())):"Calculated odometer: "+Math.round(curOdo())}
+function mil(){var sb=0,sp=0,sc=0;S.miles.forEach(function(x){if(yrOf(x.d)!==yr)return;var t=ty(x);if(t==="Business")sb+=x.m;else if(t==="Commute")sc+=x.m;else sp+=x.m});
+var h='<div class="card"><div class="g">'+
+'<div><label>Start odometer</label><input type="number" inputmode="decimal" value="'+S.startOdo+'" onchange="S.startOdo=n(this.value);save();render()"></div>'+
+'<div><label>Tracking start date</label><input type="date" value="'+esc(S.startDate)+'" onchange="S.startDate=this.value;save();render()"></div>'+
+'<div><label>Date</label><input type="date" id="m_d" value="'+today()+'"></div>'+
+'<div><label>Odometer after trip</label><input type="number" inputmode="decimal" id="m_o" oninput="mpv()"></div>'+
+'<div class="f"><label>…or trip miles (no odometer)</label><input type="number" step="0.1" inputmode="decimal" id="m_m" oninput="mpv()"></div>'+
+'<div class="f"><label>Destination / business purpose</label><input id="m_p" placeholder="Sourcing inventory: Savers (round trip from home)"></div></div>'+
+'<p><button class="b" onclick="addM(\'Business\')">Log Business</button> <button class="b s" onclick="addM(\'Personal\')">Personal</button> <button class="b s" onclick="addM(\'Commute\')">Commute</button></p><div class="mut" id="m_pv">Calculated odometer: '+Math.round(curOdo())+'</div></div>'+
+'<div class="card"><b>Schedule C, Part IV (line 44), '+yr+'</b>'+st("a) Business miles",r1(sb),"")+st("b) Commuting miles",r1(sc),"")+st("c) Other personal miles",r1(sp),"")+
+'<div class="mut">Odometer math starts on your tracking start date; earlier trips still count for the deduction. Rates: 72.5¢ before Jul 1, 2026, 76¢ after. Commuting to a regular workplace isn’t deductible. Line 44 covers the whole year, so add miles from before this log started.</div></div>';
+trips().reverse().forEach(function(x){var t=ty(x);
+h+='<div class="card"><div class="row"><div><b>'+x.m+' mi</b> · '+(t==="Business"?m(x.m*rt(x.d)):"no deduction")+'<div class="mut">'+esc(x.d)+' · '+esc(x.p)+(x.e!=null?' · odo '+x.e:'')+'</div></div><div><button class="b s" onclick="cycM(\''+x.id+'\')">'+t+'</button> <button class="b x" onclick="delM(\''+x.id+'\')">×</button></div></div></div>'});
+return h}
+function cycM(id){S.miles.forEach(function(x){if(x.id===id)x.t=MT[(MT.indexOf(ty(x))+1)%3]});save();render()}
+function addM(t){var c=mcalc(),p=$("m_p").value.trim();if(!c||!(c.m>0)||!p||!$("m_d").value){alert("Enter a date, a purpose, and either a higher odometer reading or trip miles");return}
+S.miles.push({id:uid(),d:$("m_d").value,m:c.m,e:c.e,p:p,t:t});save();render()}
+function delM(id){S.miles=S.miles.filter(function(x){return x.id!==id});save();render()}
+
+function plt(){var rows={};PLATS.forEach(function(p){rows[p]={c:0,s:0,f:0}});var un={c:0,s:0,f:0},ys={};ys[yr]=1;
+S.items.forEach(function(i){if(!i.sd)return;ys[yrOf(i.sd)]=1;if(yrOf(i.sd)!==yr)return;var r=!i.so?un:(rows[i.so]||(rows[i.so]={c:0,s:0,f:0}));r.c++;r.s+=n(i.price);r.f+=profit(i)});
+var ks=Object.keys(rows).sort(function(a,b){return rows[b].f-rows[a].f||rows[b].s-rows[a].s}),T={c:un.c,s:un.s,f:un.f};
+var td='padding:10px 6px;border-bottom:1px solid var(--bd);',tr='text-align:right;';
+function row(name,r,top){return '<tr><td style="'+td+'">'+esc(name)+(top?' ★':'')+'</td><td style="'+td+tr+'">'+r.c+'</td><td style="'+td+tr+'">'+m(r.s)+'</td><td style="'+td+tr+'" class="'+(r.f<0?'neg':'')+'">'+m(r.f)+'</td></tr>'}
+var h='<div class="card"><label>Tax year</label><select onchange="yr=parseInt(this.value);render()">'+Object.keys(ys).sort().reverse().map(function(y){return '<option'+(y==yr?" selected":"")+'>'+y+'</option>'}).join("")+'</select></div>'+
+gcard()+'<div class="card ov"><table style="width:100%;border-collapse:collapse"><tr><th style="'+td+'text-align:left;color:var(--mut)">Platform</th><th style="'+td+tr+'color:var(--mut)">Sold</th><th style="'+td+tr+'color:var(--mut)">Sales</th><th style="'+td+tr+'color:var(--mut)">Profit</th></tr>';
+ks.forEach(function(k,ix){var r=rows[k];T.c+=r.c;T.s+=r.s;T.f+=r.f;h+=row(k,r,ix===0&&r.f>0)});
+if(un.c)h+=row("Not recorded (older sales)",un,false);
+h+='<tr><td style="padding:10px 6px;font-weight:700">Total</td><td style="padding:10px 6px;font-weight:700;'+tr+'">'+T.c+'</td><td style="padding:10px 6px;font-weight:700;'+tr+'">'+m(T.s)+'</td><td style="padding:10px 6px;font-weight:700;'+tr+'">'+m(T.f)+'</td></tr></table></div>'+
+'<p class="mut">Sorted by profit, best first (★). Profit is sale price minus item cost, fees and shipping. Sales count when you mark an item sold and pick the platform.</p>';
+return h}
+var PH="",PHid=null,FQ="",FC="",FB="",FS="",RP="",RB=null,rdl=null;
+var PRE={"Shirts":"SH","Jeans":"JN","Hoodies":"HD","Sweaters":"SW","Shorts":"SR","Pants":"PT","Hats":"HT","Sports stuff":"SP","Miscellaneous wearables":"MW","Shoes":"SZ","Figurines":"FG","Toys":"TY","Pictures / art":"PA","Home goods":"HM","Other":"OT"},
+BINS=[["Shirts",1],["Jeans",2],["Hoodies",3],["Sweaters",4],["Shorts",5],["Pants",6],["Hats",7],["Sports stuff",8],["Miscellaneous wearables",9],["Shoes",10]];
+function binOf(c){for(var i=0;i<BINS.length;i++)if(BINS[i][0]===c)return BINS[i][1];return 0}
+function syncB(){document.querySelectorAll(".bc").forEach(function(b){b.classList.toggle("on",b.getAttribute("data-c")===FB)})}
+function bpick(b){var c=b.getAttribute("data-c");FB=FB===c?"":c;filt()}
+function nextSku(){var u={};S.items.forEach(function(i){if(/^\d{4}$/.test(i.sku||""))u[+i.sku]=1});for(var n=1;n<=2000;n++)if(!u[n])return("000"+n).slice(-4);return""}
+function mig(){S.items.forEach(function(i){if(binOf(i.cat)&&!i.bn){i.bn=i.cat;i.cat="Clothes"}else if(i.cat==="Clothing"||i.cat==="Button ups"||i.cat==="Jackets")i.cat="Clothes"})}
+var FK=false;
+function setFK(){FK=/^\d+$/.test(FQ.trim())&&S.items.some(function(i){return /^\d+$/.test(i.sku||"")&&+i.sku===+FQ})}
+function fm(q,c,st,b,k){return(!FQ||(FK?k===String(+FQ):q.indexOf(FQ.toLowerCase())>-1))&&(!FC||c===FC)&&(!FB||b===FB)&&(!FS||st===FS)}
+function filt(){FQ=$("f_q").value;setFK();FC=$("f_c").value;FS=$("f_s").value;syncB();document.querySelectorAll(".it").forEach(function(c){c.style.display=fm(c.getAttribute("data-q"),c.getAttribute("data-c"),c.getAttribute("data-s"),c.getAttribute("data-b"),c.getAttribute("data-k"))?"":"none"})}
+var RT=["Shipping label / postage","Shipping supplies","Other"],RX={"Shipping label / postage":"Postage (bought outside sales)","Shipping supplies":"Shipping supplies","Other":"Other"};
+function shrink(inp,max,q,cb){var f=inp.files&&inp.files[0];if(!f)return;var r=new FileReader();r.onload=function(){var im=new Image();im.onload=function(){var k=max/Math.max(im.width,im.height,max),c=document.createElement("canvas");c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext("2d").drawImage(im,0,0,c.width,c.height);cb(c.toDataURL("image/jpeg",q))};im.src=r.result};r.readAsDataURL(f)}
+function rpv(){return RP?'<img src="'+RP+'" style="max-width:140px;border-radius:8px;margin-top:8px"><br><button type="button" class="b s" style="padding:6px 10px;font-size:13px" onclick="RP=\'\';rpv2()">Remove photo</button>':''}
+function rpv2(){var b=$("r_pv");if(b)b.innerHTML=rpv()}
+function pickR(inp){shrink(inp,900,0.6,function(u){RP=u;rpv2()})}
+function addR(){var a=n($("r_a").value),nt=$("r_n").value.trim(),t=$("r_t").value,d=$("r_d").value;if(!RP&&!a&&!nt){alert("Add a photo, an amount or a note");return}
+S.rcp=S.rcp||[];S.rcp.push({id:uid(),d:d,a:a,t:t,n:nt,photo:RP});if($("r_x").checked&&a)S.exp.push({id:uid(),d:d,a:a,c:RX[t]||"Other",n:nt||"Receipt"});RP="";save();render()}
+function delR(id){if(rdl!==id){rdl=id;render();return}rdl=null;S.rcp=(S.rcp||[]).filter(function(r){return r.id!==id});save();render()}
+function rcp(){var h='<div class="card"><div class="g">'+
+'<div><label>Date</label><input type="date" id="r_d" value="'+today()+'"></div>'+
+'<div><label>Amount ($, optional)</label><input type="number" step="0.01" inputmode="decimal" id="r_a"></div>'+
+'<div class="f"><label>Type</label><select id="r_t">'+opts(RT)+'</select></div>'+
+'<div class="f"><label>Note (order, platform, tracking #)</label><input id="r_n"></div>'+
+'<div class="f"><label>Receipt photo</label><input type="file" accept="image/*" id="r_f" onchange="pickR(this)"><div id="r_pv">'+rpv()+'</div></div></div>'+
+'<p><label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="r_x" style="width:auto"> Also add this amount to Expenses</label></p>'+
+'<p><button class="b" onclick="addR()">Save receipt</button></p></div>';
+var L=(S.rcp||[]).slice().sort(function(a,b){return a.d<b.d?1:-1});h+='<h2>'+L.length+' receipts</h2>';
+L.forEach(function(r){h+='<div class="card"><div class="row"><div><b>'+(r.a?m(r.a):"No amount")+'</b> \u00b7 '+esc(r.t||"")+'<div class="mut">'+esc(r.d)+(r.n?' \u00b7 '+esc(r.n):'')+'</div></div><button class="b x" onclick="delR(\''+r.id+'\')">'+(rdl===r.id?"Tap again to delete":"Delete")+'</button></div>'+(r.photo?'<img src="'+r.photo+'" onclick="RB=RB===\''+r.id+'\'?null:\''+r.id+'\';render()" style="margin-top:10px;border-radius:8px;'+(RB===r.id?'width:100%':'width:96px;height:96px;object-fit:cover')+'">':'')+'</div>'});
+return h}
+function pvh(){return PH?'<img src="'+PH+'" style="max-width:120px;border-radius:8px;margin-top:8px"><br><button type="button" class="b s" style="padding:6px 10px;font-size:13px" onclick="PH=\'\';pv()">Remove photo</button>':''}
+function pv(){var b=$("a_pv");if(b)b.innerHTML=pvh()}
+function pickPhoto(inp){var f=inp.files&&inp.files[0];if(!f)return;var r=new FileReader();r.onload=function(){var im=new Image();im.onload=function(){var k=300/Math.max(im.width,im.height,300),c=document.createElement("canvas");c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext("2d").drawImage(im,0,0,c.width,c.height);PH=c.toDataURL("image/jpeg",0.5);pv()};im.src=r.result};r.readAsDataURL(f)}
+function goTop(){setTimeout(function(){var a=$("a_name");if(a&&a.scrollIntoView)a.scrollIntoView({block:"center"});else scrollTo(0,0)},50)}
+var gmon=null;
+function mk(d){return d.slice(0,7)}
+function mprofit(k){var p=0;S.items.forEach(function(i){if(i.sd&&mk(i.sd)===k)p+=profit(i)});return p}
+function gGoal(k){S.goals=S.goals||{};if(S.goals[k]!=null)return S.goals[k];var ks=Object.keys(S.goals).filter(function(x){return x<k}).sort();return ks.length?S.goals[ks[ks.length-1]]:(S.goal||0)}
+function snap(){var c=mk(today()),ks={},ch=0;S.hist=S.hist||{};S.items.forEach(function(i){if(i.sd)ks[mk(i.sd)]=1});Object.keys(ks).forEach(function(k){if(k<c&&!S.hist[k]){S.hist[k]={p:mprofit(k),g:gGoal(k)};ch=1}});if(ch)save()}
+function mshift(d){var p=(gmon||mk(today())).split("-"),dt=new Date(+p[0],+p[1]-1+d,1);gmon=dt.getFullYear()+"-"+("0"+(dt.getMonth()+1)).slice(-2);render()}
+function setGoal(k,v){S.goals=S.goals||{};S.goals[k]=n(v);S.goal=n(v);if(S.hist&&S.hist[k])S.hist[k].g=n(v);save();render()}
+function mlab(k,s){var p=k.split("-");return new Date(+p[0],+p[1]-1,1).toLocaleString("en-US",{month:s,year:"numeric"})}
+function gcard(){var cur=mk(today()),k=gmon||cur,past=k<cur,h=S.hist&&S.hist[k],g=gGoal(k),mp=past&&h?h.p:mprofit(k);if(past&&h)g=h.g;
+var ms=S.items.filter(function(i){return i.sd&&mk(i.sd)===k}),sp=0;ms.forEach(function(i){sp+=n(i.price)});var top=ms.slice().sort(function(a,b){return n(b.price)-n(a.price)}).slice(0,3),pc=g>0?Math.max(0,Math.min(100,mp/g*100)):0,lab=mlab(k,"long");
+var hs=Object.keys(S.hist||{}).sort().reverse().slice(0,12).map(function(x){var r=S.hist[x];return '<div class="stat"><span>'+mlab(x,"short")+'</span><span>'+m(r.p)+(r.g>0?' of '+m(r.g):'')+'</span></div>'}).join("");
+return '<div class="card"><div class="row" style="align-items:center"><button class="b s" onclick="mshift(-1)">\u2039</button><b>'+lab+'</b><button class="b s" onclick="mshift(1)">\u203a</button></div><label style="margin-top:8px">Goal profit for '+lab+' ($)</label><input type="number" inputmode="decimal" value="'+(g||"")+'" placeholder="e.g. 1000" onchange="setGoal(\''+k+'\',this.value)"><div style="height:14px;border-radius:99px;background:var(--bd);margin:12px 0 8px;overflow:hidden"><div style="height:100%;width:'+pc+'%;background:var(--ac)"></div></div><div class="mut">'+m(mp)+(past&&h?' final profit for ':' profit in ')+lab+' of '+m(g)+' goal'+(g>0?(mp>=g?'. Goal reached!':(past?'.':'. '+m(g-mp)+' to go.')):'')+'</div><div class="stat" style="margin-top:10px"><span>Items sold in '+lab+'</span><span>'+ms.length+'</span></div><div class="stat"><span>Average sale price</span><span>'+m(ms.length?sp/ms.length:0)+'</span></div><h2>Top 3 sales</h2>'+(top.length?top.map(function(i,ix){return '<div class="stat"><span>'+(ix+1)+'. '+esc(i.name||("SKU "+(i.sku||"\u2014")))+(i.so?' ('+esc(i.so)+')':'')+'</span><span>'+m(n(i.price))+'</span></div>'}).join(""):'<div class="mut">No sales in this month yet.</div>')+(hs?'<h2>Saved past months</h2>'+hs:'')+'</div>'}
+function gcardOld(){var d=today().slice(0,7),mp=0,g=S.goal||0;S.items.forEach(function(i){if(i.sd&&i.sd.slice(0,7)===d)mp+=profit(i)});var pc=g>0?Math.max(0,Math.min(100,mp/g*100)):0;
+return '<div class="card"><b>Monthly goal</b><label style="margin-top:8px">Goal profit ($/month)</label><input type="number" inputmode="decimal" value="'+(g||"")+'" placeholder="e.g. 1000" onchange="S.goal=n(this.value);save();render()"><div style="height:14px;border-radius:99px;background:var(--bd);margin:12px 0 8px;overflow:hidden"><div style="height:100%;width:'+pc+'%;background:var(--ac)"></div></div><div class="mut">'+m(mp)+' profit this month of '+m(g)+' goal'+(g>0?(mp>=g?'. Goal reached!':'. '+m(g-mp)+' to go.'):'')+'</div></div>'}
+function calc(){var sold=S.items.filter(function(i){return i.sd&&yrOf(i.sd)===yr}),
+r={sales:0,cogs:0,fees:0,ship:0,cnt:sold.length};
+sold.forEach(function(i){r.sales+=n(i.price);r.cogs+=n(i.cost);r.fees+=n(i.fees);r.ship+=n(i.ship)});
+r.oth=S.exp.filter(function(x){return yrOf(x.d)===yr}).reduce(function(s,x){return s+n(x.a)},0);
+r.mi=0;r.cm=0;r.pm=0;r.mid=0;S.miles.forEach(function(x){if(yrOf(x.d)!==yr)return;var t=ty(x);if(t==="Business"){r.mi+=x.m;r.mid+=x.m*rt(x.d)}else if(t==="Commute")r.cm+=x.m;else r.pm+=x.m});
+r.net=r.sales-r.cogs-r.fees-r.ship-r.oth-r.mid;
+r.se=r.net>400?r.net*0.9235*0.153:0;
+var stock=S.items.filter(function(i){return !i.sd});r.stockN=stock.length;r.stockV=stock.reduce(function(s,i){return s+n(i.cost)},0);
+return r}
+function rep(){var r=calc(),ys={};S.items.concat(S.exp,S.miles).forEach(function(x){var y=yrOf(x.sd||x.d||x.bd);if(y)ys[y]=1});ys[yr]=1;
+var h='<div class="card"><label>Tax year</label><select onchange="yr=parseInt(this.value);render()">'+Object.keys(ys).sort().reverse().map(function(y){return '<option'+(y==yr?" selected":"")+'>'+y+'</option>'}).join("")+'</select></div>'+
+'<div class="card">'+
+st("Gross sales ("+r.cnt+" items sold)",m(r.sales),"Sch. C line 1")+
+st("Cost of goods sold (what you paid)",m(-r.cogs),"Part III / line 4")+
+st("Platform fees on sales",m(-r.fees),"Line 10 / 16")+
+st("Shipping paid on sales",m(-r.ship),"Line 9 / 27a")+
+st("Other expenses (supplies, software…)",m(-r.oth),"Lines 8–27a")+
+st("Mileage ("+r.mi.toFixed(1)+" business mi, IRS rate by date)",m(-r.mid),"Line 9")+
+'<div class="stat big"><span>Net profit</span><span class="'+(r.net>=0?"pos":"neg")+'">'+m(r.net)+'</span></div>'+
+st("Est. self-employment tax (15.3%)",m(r.se),"Sch. SE")+'</div>'+
+'<div class="card"><b>Unsold inventory</b><div class="mut">'+r.stockN+' items · '+m(r.stockV)+' at cost (not deductible until sold)</div></div>';
+var byc={};S.exp.filter(function(x){return yrOf(x.d)===yr}).forEach(function(x){byc[x.c]=(byc[x.c]||0)+n(x.a)});
+h+='<h2>Expenses by category</h2><div class="card">'+(Object.keys(byc).length?Object.keys(byc).map(function(k){return st(k,m(byc[k]),"")}).join(""):'<span class="mut">None yet</span>')+'</div>'+
+'<h2>Google Sheet sync</h2><div class="card"><label>Web app URL</label><input id="c_u" value="'+esc(C.url||"")+'" placeholder="https://script.google.com/macros/s/.../exec"><label>Password</label><input id="c_t" type="password" value="'+esc(C.token||"")+'"><p><button class="b" onclick="conn()">Connect</button></p><div class="mut">Sync status shows under the tabs.</div></div>'+
+'<h2>Tips</h2><div class="card mut">• Sales over the reporting threshold may arrive on a 1099-K; report all sales either way.<br>• Keep receipts and photos for 3+ years.<br>• Sourcing trips only count when tied to a business purpose; log them as you go.<br>• Quarterly estimated payments may be due if you owe $1,000+.</div>'+
+'<p><button class="b" onclick="rd()">Readable copy</button> <button class="b s" onclick="exp()">Backup</button> <button class="b s" onclick="imp()">Restore</button></p><div id="io"></div>';
+return h}
+function st(a,b,c){return '<div class="stat"><span>'+a+(c?' <span class="mut">('+c+')</span>':'')+'</span><span>'+b+'</span></div>'}
+function rd(){var L=["ITEMS (date bought | item | cost | date sold | sale price | fees | shipping | profit)"];
+S.items.forEach(function(i){L.push([i.bd,i.name,i.cost,i.sd,i.price,i.fees,i.ship,i.sd?profit(i).toFixed(2):""].join(" | "))});
+L.push("","EXPENSES (date | category | amount | note)");S.exp.forEach(function(x){L.push([x.d,x.c,x.a,x.n].join(" | "))});
+L.push("","MILEAGE (date | miles | type | purpose | odometer)");trips().forEach(function(x){L.push([x.d,x.m,ty(x),x.p,x.e!=null?x.e:""].join(" | "))});
+$("io").innerHTML='<label>Copy this and paste it into Notes or an email to yourself. It’s for reading only, not for restoring:</label><textarea id="ta" rows="10">'+esc(L.join("\n"))+'</textarea><p><button class="b s" onclick="cp()">Copy</button></p>'}
+function exp(){$("io").innerHTML='<label>This is your whole backup in code form, so it looks like random characters. Copy it and save it in Notes. To restore, tap Restore and paste it back:</label><textarea id="ta" rows="8">'+esc(JSON.stringify(S))+'</textarea><p><button class="b s" onclick="cp()">Copy</button></p>'}
+function cp(){var t=$("ta");t.select();try{document.execCommand("copy")}catch(e){}}
+function imp(){$("io").innerHTML='<label>Paste backup text:</label><textarea id="ta" rows="6"></textarea><p><button class="b" onclick="doImp()">Restore</button></p>'}
+function doImp(){try{var d=JSON.parse($("ta").value);if(!d.items)throw 0;S=Object.assign({items:[],exp:[],miles:[],rate:0.70},d);save();render()}catch(e){alert("That backup text isn’t valid")}}
+render();
+if(C.url)say2("Connecting…");pull();document.addEventListener("visibilitychange",function(){if(!document.hidden)pull()});
+</script>
+</body>
+</html>
