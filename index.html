@@ -58,14 +58,14 @@ function n(v){v=parseFloat(v);return isNaN(v)?0:v}
 function m(v){return (v<0?"-":"")+"$"+Math.abs(v).toFixed(2)}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,5)}
 function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
-function today(){return new Date().toISOString().slice(0,10)}
+function today(){var d=new Date();return new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)}
 function profit(i){return n(i.price)-n(i.cost)-n(i.fees)-n(i.ship)}
 function yrOf(d){return d?parseInt(d.slice(0,4)):null}
 function opts(a,v){return a.map(function(x){return '<option'+(x===v?' selected':'')+'>'+x+'</option>'}).join("")}
-function nav(){var t=[["inv","Inventory"],["exp","Expenses"],["mil","Mileage"],["plt","Platforms"],["rcp","Receipts"],["rep","Tax report"]];
+function nav(){var t=[["inv","Inventory"],["exp","Expenses"],["mil","Mileage"],["plt","Platforms"],["rcp","Receipts"],["ins","Insights"],["rep","Tax report"]];
 $("nav").innerHTML=t.map(function(x){return '<button class="'+(tab===x[0]?"on":"")+'" onclick="go(\''+x[0]+'\')">'+x[1]+'</button>'}).join("")}
 function go(t){tab=t;edit=null;render()}
-function render(){mig();snap();nav();$("app").innerHTML={inv:inv,exp:exps,mil:mil,plt:plt,rcp:rcp,rep:rep}[tab]()}
+function render(){mig();snap();nav();$("app").innerHTML={inv:inv,exp:exps,mil:mil,plt:plt,rcp:rcp,ins:ins,rep:rep}[tab]()}
 
 function inv(){var e=edit&&S.items.filter(function(i){return i.id===edit})[0]||{};if(edit&&PHid!==edit){PH=e.photo||"";PHid=edit}if(!edit&&PHid!==null){PH="";PHid=null}
 var h='<div class="card"><b>Bulk haul cost helper</b><div class="g">'+
@@ -77,7 +77,7 @@ var h='<div class="card"><b>Bulk haul cost helper</b><div class="g">'+
 '<div class="f"><label>Photo (optional)</label><input type="file" accept="image/*" id="a_file" onchange="pickPhoto(this)"><div id="a_pv">'+pvh()+'</div></div>'+
 '<div><label>Category (bin)</label><select id="a_cat">'+opts(ITYPES,e.cat||ITYPES[0])+'</select></div>'+
 '<div><label>SKU # (auto, 0001–2000)</label><input id="a_sku" value="'+esc(e.id?e.sku:nextSku(ITYPES[0]))+'"></div>'+
-'<div class="f"><label>Bin (clothes)</label><select id="a_bn"><option value="">No bin</option>'+BINS.map(function(b){return '<option value="'+b[0]+'"'+(e.bn===b[0]?' selected':'')+'>Bin '+b[1]+': '+b[0]+'</option>'}).join("")+'</select></div>'+
+'<div class="f"><label>Bin (clothes)</label><select id="a_bn"><option value="">No bin</option>'+BINS.map(function(b){return '<option value="'+b[0]+'"'+((e.id?e.bn:S.lastBin)===b[0]?' selected':'')+'>Bin '+b[1]+': '+b[0]+'</option>'}).join("")+'</select></div>'+
 '<div class="f"><label>Extra location note (optional)</label><input id="a_bin" value="'+esc(e.bin)+'" placeholder="e.g. Bin 3, Shelf B"></div>'+
 pchips(e.plat)+
 '<div class="f"><label>How you got it</label><select id="a_acq" onchange="acqch()">'+opts(ACQ,e.acq||"Bought")+'</select></div>'+
@@ -93,14 +93,14 @@ sochips("a_so",PLATS,e.so||"")+
 '</div><p><button class="b" onclick="saveItem()">'+(e.id?"Update item":"Add item")+'</button> '+(e.id?'<button class="b s" onclick="go(\'inv\')">Cancel</button>':'')+'</p></div>';
 var L=S.items.slice().sort(function(a,b){return (b.bd||"")>(a.bd||"")?1:-1});
 setFK();h+='<h2>'+L.length+' items</h2>';
-h+='<div class="card"><b>Bins</b> <span class="mut">(tap a bin to see what\u2019s in it)</span><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">'+BINS.map(function(b){var c=S.items.filter(function(i){return !i.sd&&i.bn===b[0]}).length;return '<button type="button" class="chip bc'+(FB===b[0]?' on':'')+'" data-c="'+b[0]+'" onclick="bpick(this)">Bin '+b[1]+': '+b[0]+' ('+c+')</button>'}).join("")+'</div></div>';
+h+='<div class="card"><b>Bins</b> <span class="mut">(tap a bin to see what\u2019s in it)</span><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">'+BINS.map(function(b){var c=S.items.filter(function(i){return !i.sd&&i.bn===b[0]}).length;return '<button type="button" class="chip bc'+(FB===b[0]?' on':'')+'" data-c="'+b[0]+'" onclick="bpick(this)">Bin '+b[1]+': '+b[0]+' ('+c+')</button>'}).join("")+'<button type="button" class="chip bc'+(FB==="__none"?' on':'')+'" data-c="__none" onclick="bpick(this)">No bin ('+S.items.filter(function(i){return !i.sd&&!i.bn}).length+')</button></div></div>';
 h+='<div class="card"><div class="g"><div class="f"><label>Find an item (title, SKU, bin)</label><input id="f_q" value="'+esc(FQ)+'" placeholder="Type 1 for SKU 0001, or a title, bin…" oninput="filt()"></div><div><label>Category</label><select id="f_c" onchange="filt()"><option value="">All</option>'+ITYPES.map(function(x){return '<option'+(FC===x?' selected':'')+'>'+x+'</option>'}).join("")+'</select></div><div><label>Show</label><select id="f_s" onchange="filt()"><option value="">All</option><option value="stock"'+(FS==="stock"?' selected':'')+'>In stock</option><option value="sold"'+(FS==="sold"?' selected':'')+'>Sold</option></select></div></div></div>';
 L.forEach(function(i){var sold=!!i.sd,kk=/^\d+$/.test(i.sku||"")?String(+i.sku):"",qs=[i.name,i.sku,i.bin,binOf(i.bn)?"bin "+binOf(i.bn):"",i.cat,i.plat,i.src,i.note].join(" ").toLowerCase();
 h+='<div class="card it" data-q="'+esc(qs)+'" data-c="'+esc(i.cat||"Clothing")+'" data-s="'+(sold?"sold":"stock")+'" data-b="'+esc(i.bn||"")+'" data-k="'+kk+'"'+(fm(qs,i.cat||"Clothes",sold?"sold":"stock",i.bn||"",kk)?'':' style="display:none"')+'><div class="row"><div>'+(i.photo?'<img src="'+i.photo+'" style="width:64px;height:64px;object-fit:cover;border-radius:8px;float:left;margin-right:10px">':'')+'<b>'+esc(i.name||"Untitled")+'</b><div class="mut">'+esc(i.sku?"#"+i.sku+" · ":"")+esc((binOf(i.bn)?"Bin "+binOf(i.bn)+" · ":"")+(i.bin?i.bin+" · ":""))+esc((i.cat||"Clothing")+" · ")+esc(i.plat)+" · "+(i.acq&&i.acq!=="Bought"?esc(i.acq)+(i.bd?" "+esc(i.bd):""):"bought "+esc(i.bd))+(i.src?" at "+esc(i.src):"")+'</div></div>'+
 '<span class="tag">'+(sold?"Sold":"In stock")+'</span></div>'+
 '<div class="mut">Cost '+m(n(i.cost))+(sold?' · Sold '+m(n(i.price))+(i.so?' on '+esc(i.so):'')+' · Fees '+m(n(i.fees))+' · Ship '+m(n(i.ship)):'')+'</div>'+
-(sold?'<div class="'+(profit(i)>=0?"pos":"neg")+'"><b>Profit '+m(profit(i))+'</b></div>':'')+
-'<p>'+(sold||sell===i.id?'':'<button class="b" onclick="sell=\''+i.id+'\';render()">Mark sold</button> ')+'<button class="b s" onclick="edit=\''+i.id+'\';sell=null;render();goTop()">Edit</button> <button class="b x" onclick="delItem(\''+i.id+'\')">'+(dl===i.id?"Tap again to delete":"Delete")+'</button></p>'+(sell===i.id&&!sold?sf(i):'')+'</div>'});
+(sold?'<div class="'+(profit(i)>=0?"pos":"neg")+'"><b>Profit '+m(profit(i))+'</b>'+(n(i.price)>0?' <span class="mut">('+Math.round(profit(i)/n(i.price)*100)+'% margin'+(n(i.cost)>0?', '+Math.round(profit(i)/n(i.cost)*100)+'% return':'')+')</span>':'')+'</div>':'')+
+'<p>'+(sold||sell===i.id?'':'<button class="b" onclick="sell=\''+i.id+'\';render()">Mark sold</button> ')+'<button class="b s" onclick="edit=\''+i.id+'\';sell=null;render();goTop()">Edit</button> <button class="b s" onclick="LT=LT===\''+i.id+'\'?null:\''+i.id+'\';render()">Listing text</button> <button class="b x" onclick="delItem(\''+i.id+'\')">'+(dl===i.id?"Tap again to delete":"Delete")+'</button></p>'+(sell===i.id&&!sold?sf(i):'')+(LT===i.id?lpanel(i):'')+'</div>'});
 return h}
 var H={t:"",c:""};
 function hav(){var t=n(H.t),c=n(H.c);return t>0&&c>0?(Math.round(t/c*100)/100).toFixed(2):""}
@@ -129,23 +129,24 @@ sochips("s_o",plats(i.plat).length?plats(i.plat):PLATS,plats(i.plat).length===1?
 function saveSale(id){var p=$("s_p").value,d=$("s_d").value;if(p===""||!d||!$("s_o").value){alert("Enter the platform sold on, date sold and sale price");return}
 S.items.forEach(function(i){if(i.id===id){i.sd=d;i.so=$("s_o").value;i.price=p;i.fees=$("s_f").value;i.ship=$("s_s").value}});sell=null;save();render()}
 function saveItem(){var ex=S.items.filter(function(i){return i.id===edit})[0]||{};var o={id:edit||uid()};["name","sku","cat","bn","bin","acq","plat","bd","src","cost","sd","so","price","fees","ship","note"].forEach(function(k){var el=$("a_"+k);o[k]=el?el.value:(ex[k]==null?"":ex[k])});
-o.photo=PH;if(!o.name.trim()&&!o.photo){alert("Add a title or a photo");return}
+o.photo=PH;if(!edit&&o.bn)S.lastBin=o.bn;if(!o.name.trim()&&!o.photo){alert("Add a title or a photo");return}
 if(edit)S.items=S.items.map(function(i){return i.id===edit?o:i});else S.items.push(o);
 edit=null;PH="";PHid=null;save();render()}
 var dl=null;
 function delItem(id){if(dl!==id){dl=id;render();return}dl=null;S.items=S.items.filter(function(i){return i.id!==id});save();render()}
 
-function exps(){var h='<div class="card"><div class="g">'+
-'<div><label>Date</label><input type="date" id="e_d" value="'+today()+'"></div>'+
-'<div><label>Amount ($)</label><input type="number" step="0.01" inputmode="decimal" id="e_a"></div>'+
-'<div class="f"><label>Category</label><select id="e_c">'+opts(CATS)+'</select></div>'+
-'<div class="f"><label>Description / vendor</label><input id="e_n" placeholder="Poly mailers, Amazon"></div></div>'+
-'<p><button class="b" onclick="addExp()">Add expense</button></p></div>';
+function exps(){var ex=EE&&S.exp.filter(function(x){return x.id===EE})[0]||{};var h='<div class="card"><div class="g">'+
+'<div><label>Date</label><input type="date" id="e_d" value="'+esc(ex.d||today())+'"></div>'+
+'<div><label>Amount ($)</label><input type="number" step="0.01" inputmode="decimal" id="e_a" value="'+esc(ex.a)+'"></div>'+
+'<div class="f"><label>Category</label><select id="e_c">'+opts(CATS,ex.c)+'</select></div>'+
+'<div class="f"><label>Description / vendor</label><input id="e_n" value="'+esc(ex.n)+'" placeholder="Poly mailers, Amazon"></div></div>'+
+'<p><button class="b" onclick="addExp()">'+(ex.id?"Update expense":"Add expense")+'</button>'+(ex.id?' <button class="b s" onclick="EE=null;render()">Cancel</button>':'')+'</p></div>';
 S.exp.slice().sort(function(a,b){return a.d<b.d?1:-1}).forEach(function(x){
-h+='<div class="card"><div class="row"><div><b>'+m(n(x.a))+'</b> · '+esc(x.c)+'<div class="mut">'+esc(x.d)+' · '+esc(x.n)+'</div></div><button class="b x" onclick="delE(\''+x.id+'\')">Delete</button></div></div>'});
+h+='<div class="card"><div class="row"><div><b>'+m(n(x.a))+'</b> · '+esc(x.c)+'<div class="mut">'+esc(x.d)+' · '+esc(x.n)+'</div></div><div><button class="b s" onclick="EE=\''+x.id+'\';render();goTo(\'e_a\')">Edit</button> <button class="b x" onclick="delE(\''+x.id+'\')">Delete</button></div></div></div>'});
 return h}
 function addExp(){var a=n($("e_a").value);if(!a){alert("Enter an amount");return}
-S.exp.push({id:uid(),d:$("e_d").value,a:a,c:$("e_c").value,n:$("e_n").value});save();render()}
+var o={d:$("e_d").value,a:a,c:$("e_c").value,n:$("e_n").value};
+if(EE){S.exp.forEach(function(x){if(x.id===EE){x.d=o.d;x.a=o.a;x.c=o.c;x.n=o.n}});EE=null}else{o.id=uid();S.exp.push(o)}save();render()}
 function delE(id){S.exp=S.exp.filter(function(x){return x.id!==id});save();render()}
 
 var MT=["Business","Personal","Commute"];
@@ -156,22 +157,24 @@ function trips(){return S.miles.slice().sort(function(a,b){return a.d<b.d?-1:a.d
 function curOdo(){var o=S.startOdo;trips().forEach(function(x){if(x.d>=S.startDate)o=x.e!=null?x.e:o+x.m});return o}
 function mcalc(){var o=$("m_o").value,v=$("m_m").value;if(o!==""){var e=n(o);return{m:r1(e-curOdo()),e:e}}if(v!=="")return{m:n(v),e:null};return null}
 function mpv(){var c=mcalc();$("m_pv").textContent=c?(c.m>0?"This trip: "+c.m+" mi":"Odometer must be above "+Math.round(curOdo())):"Calculated odometer: "+Math.round(curOdo())}
-function mil(){var sb=0,sp=0,sc=0;S.miles.forEach(function(x){if(yrOf(x.d)!==yr)return;var t=ty(x);if(t==="Business")sb+=x.m;else if(t==="Commute")sc+=x.m;else sp+=x.m});
+function mil(){var ex=ME&&S.miles.filter(function(x){return x.id===ME})[0]||{},sb=0,sp=0,sc=0;S.miles.forEach(function(x){if(yrOf(x.d)!==yr)return;var t=ty(x);if(t==="Business")sb+=x.m;else if(t==="Commute")sc+=x.m;else sp+=x.m});
 var h='<div class="card"><div class="g">'+
 '<div><label>Start odometer</label><input type="number" inputmode="decimal" value="'+S.startOdo+'" onchange="S.startOdo=n(this.value);save();render()"></div>'+
 '<div><label>Tracking start date</label><input type="date" value="'+esc(S.startDate)+'" onchange="S.startDate=this.value;save();render()"></div>'+
-'<div><label>Date</label><input type="date" id="m_d" value="'+today()+'"></div>'+
-'<div><label>Odometer after trip</label><input type="number" inputmode="decimal" id="m_o" oninput="mpv()"></div>'+
-'<div class="f"><label>…or trip miles (no odometer)</label><input type="number" step="0.1" inputmode="decimal" id="m_m" oninput="mpv()"></div>'+
-'<div class="f"><label>Destination / business purpose</label><input id="m_p" placeholder="Sourcing inventory: Savers (round trip from home)"></div></div>'+
-'<p><button class="b" onclick="addM(\'Business\')">Log Business</button> <button class="b s" onclick="addM(\'Personal\')">Personal</button> <button class="b s" onclick="addM(\'Commute\')">Commute</button></p><div class="mut" id="m_pv">Calculated odometer: '+Math.round(curOdo())+'</div></div>'+
+'<div><label>Date</label><input type="date" id="m_d" value="'+esc(ex.d||mdv())+'" onchange="if(!ME)setMD(this.value)"></div>'+
+'<div><label>Odometer after trip</label><input type="number" inputmode="decimal" id="m_o" oninput="mpv()"'+(ex.id?' disabled':'')+'></div>'+
+'<div class="f"><label>…or trip miles (no odometer)</label><input type="number" step="0.1" inputmode="decimal" id="m_m" value="'+esc(ex.m)+'" oninput="mpv()"></div>'+
+'<div class="f"><label>Destination / business purpose</label><input id="m_p" value="'+esc(ex.p)+'" placeholder="Sourcing inventory: Savers (round trip from home)"></div></div>'+
+'<p><button class="b" onclick="addM(\'Business\')">'+(ex.id?"Save as Business":"Log Business")+'</button> <button class="b s" onclick="addM(\'Personal\')">'+(ex.id?"Save as Personal":"Personal")+'</button> <button class="b s" onclick="addM(\'Commute\')">'+(ex.id?"Save as Commute":"Commute")+'</button>'+(ex.id?' <button class="b s" onclick="ME=null;render()">Cancel</button>':'')+'</p><div class="mut" id="m_pv">Calculated odometer: '+Math.round(curOdo())+'</div></div>'+
 '<div class="card"><b>Schedule C, Part IV (line 44), '+yr+'</b>'+st("a) Business miles",r1(sb),"")+st("b) Commuting miles",r1(sc),"")+st("c) Other personal miles",r1(sp),"")+
 '<div class="mut">Odometer math starts on your tracking start date; earlier trips still count for the deduction. Rates: 72.5¢ before Jul 1, 2026, 76¢ after. Commuting to a regular workplace isn’t deductible. Line 44 covers the whole year, so add miles from before this log started.</div></div>';
 trips().reverse().forEach(function(x){var t=ty(x);
-h+='<div class="card"><div class="row"><div><b>'+x.m+' mi</b> · '+(t==="Business"?m(x.m*rt(x.d)):"no deduction")+'<div class="mut">'+esc(x.d)+' · '+esc(x.p)+(x.e!=null?' · odo '+x.e:'')+'</div></div><div><button class="b s" onclick="cycM(\''+x.id+'\')">'+t+'</button> <button class="b x" onclick="delM(\''+x.id+'\')">×</button></div></div></div>'});
+h+='<div class="card"><div class="row"><div><b>'+x.m+' mi</b> · '+(t==="Business"?m(x.m*rt(x.d)):"no deduction")+'<div class="mut">'+esc(x.d)+' · '+esc(x.p)+(x.e!=null?' · odo '+x.e:'')+'</div></div><div><button class="b s" onclick="ME=\''+x.id+'\';render();goTo(\'m_m\')">Edit</button> <button class="b s" onclick="cycM(\''+x.id+'\')">'+t+'</button> <button class="b x" onclick="delM(\''+x.id+'\')">×</button></div></div></div>'});
 return h}
 function cycM(id){S.miles.forEach(function(x){if(x.id===id)x.t=MT[(MT.indexOf(ty(x))+1)%3]});save();render()}
-function addM(t){var c=mcalc(),p=$("m_p").value.trim();if(!c||!(c.m>0)||!p||!$("m_d").value){alert("Enter a date, a purpose, and either a higher odometer reading or trip miles");return}
+function addM(t){if(ME){var m=n($("m_m").value),p0=$("m_p").value.trim(),d0=$("m_d").value;if(!(m>0)||!p0||!d0){alert("Enter a date, a purpose and the miles");return}
+S.miles.forEach(function(x){if(x.id===ME){if(m!==x.m)x.e=null;x.m=m;x.d=d0;x.p=p0;x.t=t}});ME=null;save();render();return}
+var c=mcalc(),p=$("m_p").value.trim();if(!c||!(c.m>0)||!p||!$("m_d").value){alert("Enter a date, a purpose, and either a higher odometer reading or trip miles");return}
 S.miles.push({id:uid(),d:$("m_d").value,m:c.m,e:c.e,p:p,t:t});save();render()}
 function delM(id){S.miles=S.miles.filter(function(x){return x.id!==id});save();render()}
 
@@ -187,6 +190,10 @@ if(un.c)h+=row("Not recorded (older sales)",un,false);
 h+='<tr><td style="padding:10px 6px;font-weight:700">Total</td><td style="padding:10px 6px;font-weight:700;'+tr+'">'+T.c+'</td><td style="padding:10px 6px;font-weight:700;'+tr+'">'+m(T.s)+'</td><td style="padding:10px 6px;font-weight:700;'+tr+'">'+m(T.f)+'</td></tr></table></div>'+
 '<p class="mut">Sorted by profit, best first (★). Profit is sale price minus item cost, fees and shipping. Sales count when you mark an item sold and pick the platform.</p>';
 return h}
+var EE=null,ME=null;
+function goTo(id){setTimeout(function(){var a=$(id);if(a&&a.scrollIntoView)a.scrollIntoView({block:"center"})},50)}
+function mdv(){try{var r=JSON.parse(localStorage.getItem("mdate"));if(r&&r.day===today()&&r.d)return r.d}catch(e){}return today()}
+function setMD(v){try{localStorage.setItem("mdate",JSON.stringify({d:v,day:today()}))}catch(e){}}
 var PH="",PHid=null,FQ="",FC="",FB="",FS="",RP="",RB=null,rdl=null;
 var PRE={"Shirts":"SH","Jeans":"JN","Hoodies":"HD","Sweaters":"SW","Shorts":"SR","Pants":"PT","Hats":"HT","Sports stuff":"SP","Miscellaneous wearables":"MW","Shoes":"SZ","Figurines":"FG","Toys":"TY","Pictures / art":"PA","Home goods":"HM","Other":"OT"},
 BINS=[["Shirts",1],["Jeans",2],["Hoodies",3],["Sweaters",4],["Shorts",5],["Pants",6],["Hats",7],["Sports stuff",8],["Miscellaneous wearables",9],["Shoes",10]];
@@ -197,7 +204,7 @@ function nextSku(){var u={};S.items.forEach(function(i){if(/^\d{4}$/.test(i.sku|
 function mig(){S.items.forEach(function(i){if(binOf(i.cat)&&!i.bn){i.bn=i.cat;i.cat="Clothes"}else if(i.cat==="Clothing"||i.cat==="Button ups"||i.cat==="Jackets")i.cat="Clothes"})}
 var FK=false;
 function setFK(){FK=/^\d+$/.test(FQ.trim())&&S.items.some(function(i){return /^\d+$/.test(i.sku||"")&&+i.sku===+FQ})}
-function fm(q,c,st,b,k){return(!FQ||(FK?k===String(+FQ):q.indexOf(FQ.toLowerCase())>-1))&&(!FC||c===FC)&&(!FB||b===FB)&&(!FS||st===FS)}
+function fm(q,c,st,b,k){return(!FQ||(FK?k===String(+FQ):q.indexOf(FQ.toLowerCase())>-1))&&(!FC||c===FC)&&(!FB||(FB==="__none"?!b:b===FB))&&(!FS||st===FS)}
 function filt(){FQ=$("f_q").value;setFK();FC=$("f_c").value;FS=$("f_s").value;syncB();document.querySelectorAll(".it").forEach(function(c){c.style.display=fm(c.getAttribute("data-q"),c.getAttribute("data-c"),c.getAttribute("data-s"),c.getAttribute("data-b"),c.getAttribute("data-k"))?"":"none"})}
 var RT=["Shipping label / postage","Shipping supplies","Other"],RX={"Shipping label / postage":"Postage (bought outside sales)","Shipping supplies":"Shipping supplies","Other":"Other"};
 function shrink(inp,max,q,cb){var f=inp.files&&inp.files[0];if(!f)return;var r=new FileReader();r.onload=function(){var im=new Image();im.onload=function(){var k=max/Math.max(im.width,im.height,max),c=document.createElement("canvas");c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext("2d").drawImage(im,0,0,c.width,c.height);cb(c.toDataURL("image/jpeg",q))};im.src=r.result};r.readAsDataURL(f)}
@@ -236,6 +243,34 @@ var hs=Object.keys(S.hist||{}).sort().reverse().slice(0,12).map(function(x){var 
 return '<div class="card"><div class="row" style="align-items:center"><button class="b s" onclick="mshift(-1)">\u2039</button><b>'+lab+'</b><button class="b s" onclick="mshift(1)">\u203a</button></div><label style="margin-top:8px">Goal profit for '+lab+' ($)</label><input type="number" inputmode="decimal" value="'+(g||"")+'" placeholder="e.g. 1000" onchange="setGoal(\''+k+'\',this.value)"><div style="height:14px;border-radius:99px;background:var(--bd);margin:12px 0 8px;overflow:hidden"><div style="height:100%;width:'+pc+'%;background:var(--ac)"></div></div><div class="mut">'+m(mp)+(past&&h?' final profit for ':' profit in ')+lab+' of '+m(g)+' goal'+(g>0?(mp>=g?'. Goal reached!':(past?'.':'. '+m(g-mp)+' to go.')):'')+'</div><div class="stat" style="margin-top:10px"><span>Items sold in '+lab+'</span><span>'+ms.length+'</span></div><div class="stat"><span>Average sale price</span><span>'+m(ms.length?sp/ms.length:0)+'</span></div><h2>Top 3 sales</h2>'+(top.length?top.map(function(i,ix){return '<div class="stat"><span>'+(ix+1)+'. '+esc(i.name||("SKU "+(i.sku||"\u2014")))+(i.so?' ('+esc(i.so)+')':'')+'</span><span>'+m(n(i.price))+'</span></div>'}).join(""):'<div class="mut">No sales in this month yet.</div>')+(hs?'<h2>Saved past months</h2>'+hs:'')+'</div>'}
 function gcardOld(){var d=today().slice(0,7),mp=0,g=S.goal||0;S.items.forEach(function(i){if(i.sd&&i.sd.slice(0,7)===d)mp+=profit(i)});var pc=g>0?Math.max(0,Math.min(100,mp/g*100)):0;
 return '<div class="card"><b>Monthly goal</b><label style="margin-top:8px">Goal profit ($/month)</label><input type="number" inputmode="decimal" value="'+(g||"")+'" placeholder="e.g. 1000" onchange="S.goal=n(this.value);save();render()"><div style="height:14px;border-radius:99px;background:var(--bd);margin:12px 0 8px;overflow:hidden"><div style="height:100%;width:'+pc+'%;background:var(--ac)"></div></div><div class="mut">'+m(mp)+' profit this month of '+m(g)+' goal'+(g>0?(mp>=g?'. Goal reached!':'. '+m(g-mp)+' to go.'):'')+'</div></div>'}
+var LT=null,LP="";
+function wds(t){return (t||"").toLowerCase().replace(/[^a-z0-9 ]/g," ").split(/\s+/).filter(function(w){return w.length>3})}
+function ltext(i,p){var nm=(i.name||"").trim(),lim=p==="eBay"?80:p==="Poshmark"?50:100,t=nm.length>lim?nm.slice(0,lim-1).trim():nm,tg=[],c=(i.cat||"").toLowerCase().replace(/[^a-z0-9]/g,"");
+if(c&&c!=="other")tg.push("#"+c);wds(nm).slice(0,6).forEach(function(w){if(tg.indexOf("#"+w)<0)tg.push("#"+w)});tg=tg.slice(0,p==="Poshmark"?5:8).join(" ");
+var d=p==="eBay"?nm+"\n\n"+(i.note?i.note+"\n\n":"")+"Please review the photos for condition and message me with any questions before buying.":"\u2728 "+nm+"\n"+(i.note?i.note+"\n":"")+"\nPre-loved and ready for a new home. Message me with any questions!\n\n"+tg;
+return{t:t,d:d}}
+function lpanel(i){var ps=plats(i.plat).length?plats(i.plat):["eBay","Depop","Vinted","Poshmark","Whatnot"];if(ps.indexOf(LP)<0)LP=ps[0];var x=ltext(i,LP);
+return '<div id="lt_p" style="margin-top:10px"><label>Draft for</label><div style="display:flex;flex-wrap:wrap;gap:6px">'+ps.map(function(p){return '<button type="button" class="chip lc'+(p===LP?' on':'')+'" data-p="'+esc(p)+'" onclick="lset(\''+i.id+'\',\''+p+'\')">'+esc(p)+'</button>'}).join("")+'</div><label>Title <span class="mut" id="lt_c">'+x.t.length+' characters</span></label><textarea id="lt_t" rows="2" style="width:100%">'+esc(x.t)+'</textarea><p><button class="b s" onclick="cpT(\'lt_t\')">Copy title</button></p><label>Description</label><textarea id="lt_d" rows="7" style="width:100%">'+esc(x.d)+'</textarea><p><button class="b s" onclick="cpT(\'lt_d\')">Copy description</button></p><div class="mut">A starting draft built only from your title, notes and category. Add size, brand and condition before you post.</div></div>'}
+function lset(id,p){LP=p;var i=S.items.filter(function(x){return x.id===id})[0],x=ltext(i,p);$("lt_t").value=x.t;$("lt_d").value=x.d;$("lt_c").textContent=x.t.length+" characters";document.querySelectorAll("#lt_p .lc").forEach(function(b){b.classList.toggle("on",b.getAttribute("data-p")===p)})}
+function cpT(id){var t=$(id);t.focus();t.select();try{document.execCommand("copy")}catch(e){}try{navigator.clipboard.writeText(t.value)}catch(e){}alert("Copied")}
+function qnet(y,m1,m2){function iq(d){if(!d||yrOf(d)!==y)return false;var mo=parseInt(d.slice(5,7));return mo>=m1&&mo<=m2}var v=0;
+S.items.forEach(function(i){if(i.sd&&iq(i.sd))v+=profit(i)});S.exp.forEach(function(x){if(iq(x.d))v-=n(x.a)});S.miles.forEach(function(x){if(iq(x.d)&&ty(x)==="Business")v-=x.m*rt(x.d)});return v}
+function ins(){var tr=S.taxRate==null?10:S.taxRate,se=0.9235*0.153,td=today(),ys={};S.items.concat(S.exp,S.miles).forEach(function(x){var y=yrOf(x.sd||x.d||x.bd);if(y)ys[y]=1});ys[yr]=1;
+var h='<div class="card"><label>Year</label><select onchange="yr=parseInt(this.value);render()">'+Object.keys(ys).sort().reverse().map(function(y){return '<option'+(y==yr?" selected":"")+'>'+y+'</option>'}).join("")+'</select></div>';
+var ag=[],nd=0;S.items.forEach(function(i){if(i.sd)return;if(!i.bd){nd++;return}var d=Math.floor((new Date(td)-new Date(i.bd))/864e5);if(d>=30)ag.push({i:i,d:d})});ag.sort(function(a,b){return b.d-a.d});
+h+='<h2>Unsold 30+ days</h2><div class="card">'+(ag.length?ag.slice(0,30).map(function(a){return st(esc(a.i.name||"SKU "+(a.i.sku||"?"))+' <span class="mut">'+(a.i.sku?'#'+esc(a.i.sku)+' ':'')+(a.i.bn?esc(a.i.bn):'')+'</span>',a.d+' days',a.d>=90?"relist or reprice":a.d>=60?"consider a price drop":"watch")}).join(""):'<div class="mut">Nothing has sat 30+ days.</div>')+(nd?'<div class="mut" style="margin-top:8px">'+nd+' unsold items have no date acquired, so they aren\u2019t counted.</div>':'')+'</div>';
+var sd=S.items.filter(function(i){return i.sd&&yrOf(i.sd)===yr&&n(i.price)>0}),tp=0,tl=0;sd.forEach(function(i){tp+=n(i.price);tl+=profit(i)});
+var mg=sd.map(function(i){return{i:i,p:profit(i)/n(i.price)*100}}).sort(function(a,b){return b.p-a.p});
+function mrow(a){return st(esc(a.i.name||"SKU "+(a.i.sku||"?")),Math.round(a.p)+'%',m(profit(a.i)))}
+h+='<h2>Profit margin, '+yr+'</h2><div class="card">'+st("Overall margin",(tp?Math.round(tl/tp*100):0)+'%',m(tl)+" profit")+(mg.length?'<div class="mut" style="margin-top:8px">Best margins</div>'+mg.slice(0,5).map(mrow).join("")+(mg.length>5?'<div class="mut" style="margin-top:8px">Lowest margins</div>'+mg.slice(-5).reverse().map(mrow).join(""):""):'<div class="mut">No sales this year yet.</div>')+'</div>';
+var ss={};S.items.forEach(function(i){if(!i.sd||yrOf(i.sd)!==yr)return;var k=(i.src||"").trim()||"Not recorded",r=ss[k]||(ss[k]={c:0,s:0,p:0,k:0});r.c++;r.s+=n(i.price);r.p+=profit(i);r.k+=n(i.cost)});
+var sk=Object.keys(ss).sort(function(a,b){return ss[b].p-ss[a].p});
+h+='<h2>Best sourcing spots, '+yr+'</h2><div class="card">'+(sk.length?sk.map(function(k,ix){var r=ss[k];return st(esc(k)+(ix===0&&r.p>0?' \u2605':''),m(r.p),r.c+' sold, '+m(r.p/r.c)+' avg'+(r.k>0?', '+Math.round(r.p/r.k*100)+'% return':''))}).join(""):'<div class="mut">Fill in \u201cWhere from\u201d on items and mark them sold.</div>')+'</div>';
+var qs=[["Q1 (Jan\u2013Mar)",1,3,"Apr 15, "+yr],["Q2 (Apr\u2013May)",4,5,"Jun 15, "+yr],["Q3 (Jun\u2013Aug)",6,8,"Sep 15, "+yr],["Q4 (Sep\u2013Dec)",9,12,"Jan 15, "+(yr+1)]],tot=0;
+h+='<h2>Quarterly tax set-aside, '+yr+'</h2><div class="card"><label>Income + state tax rate (%)</label><input type="number" inputmode="decimal" value="'+tr+'" onchange="S.taxRate=n(this.value);save();render()">'+qs.map(function(q){var v=qnet(yr,q[1],q[2]),a=Math.max(0,v)*(se+tr/100);tot+=a;return st(q[0],m(a),"profit "+m(v)+", due "+q[3])}).join("")+st("<b>Total to set aside</b>","<b>"+m(tot)+"</b>","")+'<div class="mut" style="margin-top:8px">Rough estimate: self-employment tax (about 14.1% of profit) plus the rate you enter. Due dates can move if they land on a weekend or holiday. Not tax advice; confirm with your preparer.</div></div>';
+var pp={};S.items.forEach(function(i){if(!i.sd||yrOf(i.sd)!==yr)return;var k=i.so||"Not recorded",r=pp[k]||(pp[k]={c:0,s:0});r.c++;r.s+=n(i.price)});
+h+='<h2>Sales by platform, '+yr+' (for 1099-K checks)</h2><div class="card">'+(Object.keys(pp).length?Object.keys(pp).sort().map(function(k){return st(esc(k),m(pp[k].s),pp[k].c+' sold')}).join(""):'<div class="mut">No sales yet.</div>')+'<div class="mut" style="margin-top:8px">Compare these gross totals to each platform\u2019s 1099-K. They can differ because of timing, fees and what each platform counts. Report all sales either way.</div></div>';
+return h}
 function calc(){var sold=S.items.filter(function(i){return i.sd&&yrOf(i.sd)===yr}),
 r={sales:0,cogs:0,fees:0,ship:0,cnt:sold.length};
 sold.forEach(function(i){r.sales+=n(i.price);r.cogs+=n(i.cost);r.fees+=n(i.fees);r.ship+=n(i.ship)});
