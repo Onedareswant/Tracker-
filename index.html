@@ -74,10 +74,10 @@ var h='<div class="card"><b>Bulk haul cost helper</b><div class="g">'+
 '<p class="mut" id="h_r">Average cost per item: '+(hav()?'$'+hav():'—')+'. It fills “Cost paid” below for each new item.</p></div>'+
 '<div class="card"><div class="g">'+
 '<div class="f"><label>'+(e.id?"Editing this item. Change anything, then tap Update item":"Item (title)")+'</label><input id="a_name" value="'+esc(e.name)+'" placeholder="e.g. Woodland buffalo plaid flannel, M"></div>'+
-'<div class="f"><label>Photo (optional)</label><input type="file" accept="image/*" id="a_file" onchange="pickPhoto(this)"><div id="a_pv">'+pvh()+'</div></div>'+
+'<div class="f"><label>Photo (optional)</label><input type="file" accept="image/*" id="a_file" onchange="pickPhoto(this)"><div id="a_pv">'+pvh()+'</div><div class="mut" id="a_pst"></div></div>'+
 '<div><label>Category (bin)</label><select id="a_cat">'+opts(ITYPES,e.cat||ITYPES[0])+'</select></div>'+
-'<div><label>SKU # (auto, 0001–2000)</label><input id="a_sku" value="'+esc(e.id?e.sku:nextSku(ITYPES[0]))+'"></div>'+
-'<div class="f"><label>Bin (clothes)</label><select id="a_bn"><option value="">No bin</option>'+BINS.map(function(b){return '<option value="'+b[0]+'"'+((e.id?e.bn:S.lastBin)===b[0]?' selected':'')+'>Bin '+b[1]+': '+b[0]+'</option>'}).join("")+'</select></div>'+
+'<div><label>SKU # (auto, 0001–2000)</label><input id="a_sku" onblur="this.value=padSku(this.value)" value="'+esc(e.id?e.sku:nextSku(ITYPES[0]))+'"></div>'+
+'<div class="f"><label>Bin (clothes)</label><select id="a_bn"><option value="">Jackets (no bin)</option>'+BINS.map(function(b){return '<option value="'+b[0]+'"'+((e.id?e.bn:S.lastBin)===b[0]?' selected':'')+'>Bin '+b[1]+': '+b[0]+'</option>'}).join("")+'</select></div>'+
 '<div class="f"><label>Extra location note (optional)</label><input id="a_bin" value="'+esc(e.bin)+'" placeholder="e.g. Bin 3, Shelf B"></div>'+
 pchips(e.plat)+
 '<div class="f"><label>How you got it</label><select id="a_acq" onchange="acqch()">'+opts(ACQ,e.acq||"Bought")+'</select></div>'+
@@ -93,10 +93,10 @@ sochips("a_so",PLATS,e.so||"")+
 '</div><p><button class="b" onclick="saveItem()">'+(e.id?"Update item":"Add item")+'</button> '+(e.id?'<button class="b s" onclick="go(\'inv\')">Cancel</button>':'')+'</p></div>';
 var L=S.items.slice().sort(function(a,b){return (b.bd||"")>(a.bd||"")?1:-1});
 setFK();h+='<h2>'+L.length+' items</h2>';
-h+='<div class="card"><b>Bins</b> <span class="mut">(tap a bin to see what\u2019s in it)</span><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">'+BINS.map(function(b){var c=S.items.filter(function(i){return !i.sd&&i.bn===b[0]}).length;return '<button type="button" class="chip bc'+(FB===b[0]?' on':'')+'" data-c="'+b[0]+'" onclick="bpick(this)">Bin '+b[1]+': '+b[0]+' ('+c+')</button>'}).join("")+'<button type="button" class="chip bc'+(FB==="__none"?' on':'')+'" data-c="__none" onclick="bpick(this)">No bin ('+S.items.filter(function(i){return !i.sd&&!i.bn}).length+')</button></div></div>';
+h+='<div class="card"><b>Bins</b> <span class="mut">(tap a bin to see what\u2019s in it)</span><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">'+BINS.map(function(b){var c=S.items.filter(function(i){return !i.sd&&i.bn===b[0]}).length;return '<button type="button" class="chip bc'+(FB===b[0]?' on':'')+'" data-c="'+b[0]+'" onclick="bpick(this)">Bin '+b[1]+': '+b[0]+' ('+c+')</button>'}).join("")+'<button type="button" class="chip bc'+(FB==="__none"?' on':'')+'" data-c="__none" onclick="bpick(this)">Jackets ('+S.items.filter(function(i){return !i.sd&&!i.bn&&(i.cat||"Clothes")==="Clothes"}).length+')</button></div></div>';
 h+='<div class="card"><div class="g"><div class="f"><label>Find an item (title, SKU, bin)</label><input id="f_q" value="'+esc(FQ)+'" placeholder="Type 1 for SKU 0001, or a title, bin…" oninput="filt()"></div><div><label>Category</label><select id="f_c" onchange="filt()"><option value="">All</option>'+ITYPES.map(function(x){return '<option'+(FC===x?' selected':'')+'>'+x+'</option>'}).join("")+'</select></div><div><label>Show</label><select id="f_s" onchange="filt()"><option value="">All</option><option value="stock"'+(FS==="stock"?' selected':'')+'>In stock</option><option value="sold"'+(FS==="sold"?' selected':'')+'>Sold</option></select></div></div></div>';
-L.forEach(function(i){var sold=!!i.sd,kk=/^\d+$/.test(i.sku||"")?String(+i.sku):"",qs=[i.name,i.sku,i.bin,binOf(i.bn)?"bin "+binOf(i.bn):"",i.cat,i.plat,i.src,i.note].join(" ").toLowerCase();
-h+='<div class="card it" data-q="'+esc(qs)+'" data-c="'+esc(i.cat||"Clothing")+'" data-s="'+(sold?"sold":"stock")+'" data-b="'+esc(i.bn||"")+'" data-k="'+kk+'"'+(fm(qs,i.cat||"Clothes",sold?"sold":"stock",i.bn||"",kk)?'':' style="display:none"')+'><div class="row"><div>'+(i.photo?'<img src="'+i.photo+'" style="width:64px;height:64px;object-fit:cover;border-radius:8px;float:left;margin-right:10px">':'')+'<b>'+esc(i.name||"Untitled")+'</b><div class="mut">'+esc(i.sku?"#"+i.sku+" · ":"")+esc((binOf(i.bn)?"Bin "+binOf(i.bn)+" · ":"")+(i.bin?i.bin+" · ":""))+esc((i.cat||"Clothing")+" · ")+esc(i.plat)+" · "+(i.acq&&i.acq!=="Bought"?esc(i.acq)+(i.bd?" "+esc(i.bd):""):"bought "+esc(i.bd))+(i.src?" at "+esc(i.src):"")+'</div></div>'+
+L.forEach(function(i){var sold=!!i.sd,kk=/^\d+$/.test(i.sku||"")?String(+i.sku):"",qs=[i.name,i.sku,i.bin,binOf(i.bn)?"bin "+binOf(i.bn):(i.cat==="Clothes"?"jackets":""),i.cat,i.plat,i.src,i.note].join(" ").toLowerCase();
+h+='<div class="card it" data-q="'+esc(qs)+'" data-c="'+esc(i.cat||"Clothing")+'" data-s="'+(sold?"sold":"stock")+'" data-b="'+esc(i.bn||"")+'" data-k="'+kk+'"'+(fm(qs,i.cat||"Clothes",sold?"sold":"stock",i.bn||"",kk)?'':' style="display:none"')+'><div class="row"><div>'+(i.photo?'<img src="'+i.photo+'" style="width:64px;height:64px;object-fit:cover;border-radius:8px;float:left;margin-right:10px">':'')+'<b>'+esc(i.name||"Untitled")+'</b><div class="mut">'+esc(i.sku?"#"+i.sku+" · ":"")+esc((binOf(i.bn)?"Bin "+binOf(i.bn)+" · ":(i.cat==="Clothes"?"Jackets · ":""))+(i.bin?i.bin+" · ":""))+esc((i.cat||"Clothes")+" · ")+esc(i.plat)+" · "+esc(i.acq||"Bought")+(i.bd?" "+esc(i.bd):" (no date)")+(i.src?" at "+esc(i.src):"")+'</div></div>'+
 '<span class="tag">'+(sold?"Sold":"In stock")+'</span></div>'+
 '<div class="mut">Cost '+m(n(i.cost))+(sold?' · Sold '+m(n(i.price))+(i.so?' on '+esc(i.so):'')+' · Fees '+m(n(i.fees))+' · Ship '+m(n(i.ship)):'')+'</div>'+
 (sold?'<div class="'+(profit(i)>=0?"pos":"neg")+'"><b>Profit '+m(profit(i))+'</b>'+(n(i.price)>0?' <span class="mut">('+Math.round(profit(i)/n(i.price)*100)+'% margin'+(n(i.cost)>0?', '+Math.round(profit(i)/n(i.cost)*100)+'% return':'')+')</span>':'')+'</div>':'')+
@@ -129,7 +129,7 @@ sochips("s_o",plats(i.plat).length?plats(i.plat):PLATS,plats(i.plat).length===1?
 function saveSale(id){var p=$("s_p").value,d=$("s_d").value;if(p===""||!d||!$("s_o").value){alert("Enter the platform sold on, date sold and sale price");return}
 S.items.forEach(function(i){if(i.id===id){i.sd=d;i.so=$("s_o").value;i.price=p;i.fees=$("s_f").value;i.ship=$("s_s").value}});sell=null;save();render()}
 function saveItem(){var ex=S.items.filter(function(i){return i.id===edit})[0]||{};var o={id:edit||uid()};["name","sku","cat","bn","bin","acq","plat","bd","src","cost","sd","so","price","fees","ship","note"].forEach(function(k){var el=$("a_"+k);o[k]=el?el.value:(ex[k]==null?"":ex[k])});
-o.photo=PH;if(!edit&&o.bn)S.lastBin=o.bn;if(!o.name.trim()&&!o.photo){alert("Add a title or a photo");return}
+o.sku=padSku(o.sku);var dup=S.items.filter(function(i){return i.id!==o.id&&o.sku&&i.sku===o.sku})[0];if(dup){alert("SKU "+o.sku+" is already used by "+(dup.name||"another item")+". Pick a different number.");return}o.photo=PH;if(!edit&&o.bn)S.lastBin=o.bn;if(!o.name.trim()&&!o.photo){alert("Add a title or a photo");return}
 if(edit)S.items=S.items.map(function(i){return i.id===edit?o:i});else S.items.push(o);
 edit=null;PH="";PHid=null;save();render()}
 var dl=null;
@@ -191,20 +191,21 @@ h+='<tr><td style="padding:10px 6px;font-weight:700">Total</td><td style="paddin
 '<p class="mut">Sorted by profit, best first (★). Profit is sale price minus item cost, fees and shipping. Sales count when you mark an item sold and pick the platform.</p>';
 return h}
 var EE=null,ME=null;
+function padSku(v){v=(v||"").trim();return /^\d{1,3}$/.test(v)?("000"+v).slice(-4):v}
 function goTo(id){setTimeout(function(){var a=$(id);if(a&&a.scrollIntoView)a.scrollIntoView({block:"center"})},50)}
 function mdv(){try{var r=JSON.parse(localStorage.getItem("mdate"));if(r&&r.day===today()&&r.d)return r.d}catch(e){}return today()}
 function setMD(v){try{localStorage.setItem("mdate",JSON.stringify({d:v,day:today()}))}catch(e){}}
 var PH="",PHid=null,FQ="",FC="",FB="",FS="",RP="",RB=null,rdl=null;
 var PRE={"Shirts":"SH","Jeans":"JN","Hoodies":"HD","Sweaters":"SW","Shorts":"SR","Pants":"PT","Hats":"HT","Sports stuff":"SP","Miscellaneous wearables":"MW","Shoes":"SZ","Figurines":"FG","Toys":"TY","Pictures / art":"PA","Home goods":"HM","Other":"OT"},
-BINS=[["Shirts",1],["Jeans",2],["Hoodies",3],["Sweaters",4],["Shorts",5],["Pants",6],["Hats",7],["Sports stuff",8],["Miscellaneous wearables",9],["Shoes",10]];
+BINS=[["Shirts",1],["Jeans",2],["Hoodies",3],["Sweaters",4],["Shorts",5],["Pants",6],["Coats",7],["Shoes",8],["Hats",9],["Miscellaneous wearables",10]];
 function binOf(c){for(var i=0;i<BINS.length;i++)if(BINS[i][0]===c)return BINS[i][1];return 0}
 function syncB(){document.querySelectorAll(".bc").forEach(function(b){b.classList.toggle("on",b.getAttribute("data-c")===FB)})}
 function bpick(b){var c=b.getAttribute("data-c");FB=FB===c?"":c;filt()}
 function nextSku(){var u={};S.items.forEach(function(i){if(/^\d{4}$/.test(i.sku||""))u[+i.sku]=1});for(var n=1;n<=2000;n++)if(!u[n])return("000"+n).slice(-4);return""}
-function mig(){S.items.forEach(function(i){if(binOf(i.cat)&&!i.bn){i.bn=i.cat;i.cat="Clothes"}else if(i.cat==="Clothing"||i.cat==="Button ups"||i.cat==="Jackets")i.cat="Clothes"})}
+function mig(){S.items.forEach(function(i){if(i.bn==="Sports stuff")i.bn="";if(binOf(i.cat)&&!i.bn){i.bn=i.cat;i.cat="Clothes"}else if(i.cat==="Clothing"||i.cat==="Button ups"||i.cat==="Jackets")i.cat="Clothes"})}
 var FK=false;
 function setFK(){FK=/^\d+$/.test(FQ.trim())&&S.items.some(function(i){return /^\d+$/.test(i.sku||"")&&+i.sku===+FQ})}
-function fm(q,c,st,b,k){return(!FQ||(FK?k===String(+FQ):q.indexOf(FQ.toLowerCase())>-1))&&(!FC||c===FC)&&(!FB||(FB==="__none"?!b:b===FB))&&(!FS||st===FS)}
+function fm(q,c,st,b,k){return(!FQ||(FK?k===String(+FQ):q.indexOf(FQ.toLowerCase())>-1))&&(!FC||c===FC)&&(!FB||(FB==="__none"?(!b&&c==="Clothes"):b===FB))&&(!FS||st===FS)}
 function filt(){FQ=$("f_q").value;setFK();FC=$("f_c").value;FS=$("f_s").value;syncB();document.querySelectorAll(".it").forEach(function(c){c.style.display=fm(c.getAttribute("data-q"),c.getAttribute("data-c"),c.getAttribute("data-s"),c.getAttribute("data-b"),c.getAttribute("data-k"))?"":"none"})}
 var RT=["Shipping label / postage","Shipping supplies","Other"],RX={"Shipping label / postage":"Postage (bought outside sales)","Shipping supplies":"Shipping supplies","Other":"Other"};
 function shrink(inp,max,q,cb){var f=inp.files&&inp.files[0];if(!f)return;var r=new FileReader();r.onload=function(){var im=new Image();im.onload=function(){var k=max/Math.max(im.width,im.height,max),c=document.createElement("canvas");c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext("2d").drawImage(im,0,0,c.width,c.height);cb(c.toDataURL("image/jpeg",q))};im.src=r.result};r.readAsDataURL(f)}
@@ -227,7 +228,11 @@ L.forEach(function(r){h+='<div class="card"><div class="row"><div><b>'+(r.a?m(r.
 return h}
 function pvh(){return PH?'<img src="'+PH+'" style="max-width:120px;border-radius:8px;margin-top:8px"><br><button type="button" class="b s" style="padding:6px 10px;font-size:13px" onclick="PH=\'\';pv()">Remove photo</button>':''}
 function pv(){var b=$("a_pv");if(b)b.innerHTML=pvh()}
-function pickPhoto(inp){var f=inp.files&&inp.files[0];if(!f)return;var r=new FileReader();r.onload=function(){var im=new Image();im.onload=function(){var k=300/Math.max(im.width,im.height,300),c=document.createElement("canvas");c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext("2d").drawImage(im,0,0,c.width,c.height);PH=c.toDataURL("image/jpeg",0.5);pv()};im.src=r.result};r.readAsDataURL(f)}
+function pickPhoto(inp){var f=inp.files&&inp.files[0];if(!f)return;var r=new FileReader();r.onload=function(){var im=new Image();im.onload=function(){function mk2(mx,q){var k=mx/Math.max(im.width,im.height,mx),c=document.createElement("canvas");c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext("2d").drawImage(im,0,0,c.width,c.height);return c.toDataURL("image/jpeg",q)}PH=mk2(300,0.5);pv();ident(mk2(640,0.7))};im.src=r.result};r.readAsDataURL(f)}
+function ident(big){var st=$("a_pst");if(!C.url){if(st)st.textContent="Connect Google Sheet sync (Tax report tab) to let the app read photos.";return}
+if($("a_name")&&$("a_name").value.trim())return;if(st)st.textContent="Reading photo\u2026";
+api({action:"identify",image:big.split(",")[1]}).then(function(r){var s2=$("a_pst");if(!r.ok){if(s2)s2.textContent="Couldn\u2019t read the photo: "+(r.error||"error");return}var nm=$("a_name");
+if(r.title&&nm&&!nm.value.trim()){nm.value=r.title;if(s2)s2.textContent="Suggested title filled in. Check it before saving."}else if(s2)s2.textContent=r.title?"":"Couldn\u2019t identify it, so the title is blank."}).catch(function(){var s2=$("a_pst");if(s2)s2.textContent="Couldn\u2019t reach your sheet script."})}
 function goTop(){setTimeout(function(){var a=$("a_name");if(a&&a.scrollIntoView)a.scrollIntoView({block:"center"});else scrollTo(0,0)},50)}
 var gmon=null;
 function mk(d){return d.slice(0,7)}
