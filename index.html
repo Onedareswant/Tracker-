@@ -48,10 +48,51 @@ var CK="resellerSheetCfg",C={},pt=null;
 try{C=JSON.parse(localStorage.getItem(CK))||{}}catch(e){}
 function say2(t){var b=document.getElementById("sy");if(b)b.textContent=t}
 function api(b){return fetch(C.url,{method:"POST",redirect:"follow",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(Object.assign({token:C.token},b))}).then(function(r){return r.json()})}
-function push(){if(!C.url)return;say2("Saving…");clearTimeout(pt);pt=setTimeout(function(){api({action:"save",state:S}).then(function(r){say2(r.ok?"Saved to Google Sheet "+new Date().toLocaleTimeString():"Not saved: "+(r.error||"error"))}).catch(function(){say2("Offline. Will save on your next change")})},1200)}
-function pull(){if(!C.url)return;say2("Loading…");api({action:"load"}).then(function(r){if(!r.ok){say2("Sheet error: "+(r.error||""));return}var d=r.state;if(d&&(d._t||0)>(S._t||0)){S=Object.assign({items:[],exp:[],miles:[],rate:0.70},d);try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}render();say2("Loaded from Google Sheet")}else{say2("Synced");if(!d||(S._t||0)>(d._t||0))push()}}).catch(function(){say2("Offline. Using this device’s copy")})}
+var READY=false,IDBOK=true,IDBP=null,PC={};
+function pr(k,v){return IDBOK&&(k==="photos"||k==="photo")?undefined:v}
+function idb(){if(!IDBP)IDBP=new Promise(function(res,rej){try{var q=indexedDB.open("rtPhotos",1);q.onupgradeneeded=function(){q.result.createObjectStore("p")};q.onsuccess=function(){res(q.result)};q.onerror=function(){rej(q.error)}}catch(e){rej(e)}});return IDBP}
+function idbPut(k,v){return idb().then(function(d){return new Promise(function(res){var t=d.transaction("p","readwrite");t.objectStore("p").put(v,k);t.oncomplete=res;t.onerror=res})}).catch(function(){IDBOK=false})}
+function idbDel(k){return idb().then(function(d){return new Promise(function(res){var t=d.transaction("p","readwrite");t.objectStore("p").delete(k);t.oncomplete=res;t.onerror=res})}).catch(function(){})}
+function sigI(i){return (i.photos||[]).join("").length+"|"+(i.photo||"").length}
+function persistPhotos(){var ps=[],live={};
+S.items.forEach(function(i){var k="i:"+i.id,has=(i.photos&&i.photos.length)||i.photo;live[k]=1;if(has){var sg=sigI(i);if(PC[k]!==sg){PC[k]=sg;ps.push(idbPut(k,{photos:(i.photos&&i.photos.length)?i.photos:[i.photo],photo:i.photo||i.photos[0]}))}}else if(PC[k]){delete PC[k];ps.push(idbDel(k))}});
+(S.rcp||[]).forEach(function(r){var k="r:"+r.id;live[k]=1;if(r.photo){var sg=String(r.photo.length);if(PC[k]!==sg){PC[k]=sg;ps.push(idbPut(k,r.photo))}}else if(PC[k]){delete PC[k];ps.push(idbDel(k))}});
+Object.keys(PC).forEach(function(k){if(!live[k]){delete PC[k];ps.push(idbDel(k))}});return Promise.all(ps)}
+function hydrate(){return idb().then(function(d){return new Promise(function(res){var m={},t=d.transaction("p"),c=t.objectStore("p").openCursor();c.onsuccess=function(){var x=c.result;if(x){m[x.key]=x.value;x.continue()}};t.oncomplete=function(){res(m)};t.onerror=function(){res({})}})}).then(function(m){var ch=false;
+S.items.forEach(function(i){var v=m["i:"+i.id];if(v&&!(i.photos&&i.photos.length)&&!i.photo){i.photos=v.photos;i.photo=v.photo;ch=true}if(v)PC["i:"+i.id]=sigI(i)});
+(S.rcp||[]).forEach(function(r){var v=m["r:"+r.id];if(v&&!r.photo){r.photo=v;ch=true}if(v)PC["r:"+r.id]=String((r.photo||"").length)});return ch}).catch(function(){IDBOK=false;return false})}
+var UP={},DIRTY={},DQ=[],DBZ=false,FR=false;
+try{UP=JSON.parse(localStorage.getItem("rtUp"))||{}}catch(e){}
+function upSave(){try{localStorage.setItem("rtUp",JSON.stringify(UP))}catch(e){}}
+function dq(j){DQ.push(j);dRun()}
+function dRun(){if(DBZ||!C.url||!READY)return;if(!DQ.length){if(FR){FR=false;if(!(edit||PHS.length||($("a_name")&&$("a_name").value)))render()}return}
+DBZ=true;say2("Photo sync: "+DQ.length+" left\u2026");var j=DQ.shift();j().catch(function(){}).then(function(){DBZ=false;if(!DQ.length)say2("Photos synced");dRun()})}
+function syncPhotos(){var ch=false;
+S.items.forEach(function(i){var k="i:"+i.id,has=(i.photos&&i.photos.length)||i.photo;
+if(has){if(i.hp!==1){i.hp=1;ch=true}if(!i.pv){i.pv=Date.now();ch=true}
+if(C.url&&READY&&(UP[k]===undefined||DIRTY[k])){var val=JSON.stringify({photos:(i.photos&&i.photos.length)?i.photos:[i.photo]});UP[k]=String(i.pv);delete DIRTY[k];upSave();
+dq(function(){return api({action:"photo_put",key:k,data:val}).then(function(r){if(!r.ok){delete UP[k];upSave()}},function(){delete UP[k];upSave()})})}}
+else{if(i.hp===1){i.hp=0;ch=true}if(UP[k]&&C.url&&READY){delete UP[k];upSave();dq(function(){return api({action:"photo_del",key:k})})}}});
+(S.rcp||[]).forEach(function(r){var k="r:"+r.id;
+if(r.photo){if(r.hp!==1){r.hp=1;ch=true}if(!r.pv){r.pv=Date.now();ch=true}
+if(C.url&&READY&&(UP[k]===undefined||DIRTY[k])){var val=JSON.stringify({photo:r.photo});UP[k]=String(r.pv);delete DIRTY[k];upSave();
+dq(function(){return api({action:"photo_put",key:k,data:val}).then(function(x){if(!x.ok){delete UP[k];upSave()}},function(){delete UP[k];upSave()})})}}
+else{if(r.hp===1){r.hp=0;ch=true}if(UP[k]&&C.url&&READY){delete UP[k];upSave();dq(function(){return api({action:"photo_del",key:k})})}}});
+return ch}
+function fetchPhotos(){if(!C.url||!READY)return;var need=[];
+S.items.forEach(function(i){var k="i:"+i.id,has=(i.photos&&i.photos.length)||i.photo;if(i.hp&&i.pv&&(!has||(UP[k]!==undefined&&UP[k]!==String(i.pv))))need.push(k)});
+(S.rcp||[]).forEach(function(r){var k="r:"+r.id;if(r.hp&&r.pv&&(!r.photo||(UP[k]!==undefined&&UP[k]!==String(r.pv))))need.push(k)});
+for(var x=0;x<need.length;x+=6){(function(b){dq(function(){return api({action:"photo_get",keys:b}).then(function(r){if(!r.ok)return;var any=false;
+b.forEach(function(k){var d=r.items&&r.items[k],o;if(!d)return;try{o=JSON.parse(d)}catch(e){return}
+if(k.charAt(0)==="i"){S.items.forEach(function(i){if("i:"+i.id===k){i.photos=o.photos;i.photo=o.photos[0];UP[k]=String(i.pv);any=true}})}
+else{(S.rcp||[]).forEach(function(rc){if("r:"+rc.id===k){rc.photo=o.photo;UP[k]=String(rc.pv);any=true}})}});
+if(any){upSave();FR=true;persistPhotos()}})})})(need.slice(x,x+6))}dRun()}
+function push(){if(!C.url||!READY)return;say2("Saving…");clearTimeout(pt);pt=setTimeout(function(){api({action:"save",state:JSON.parse(JSON.stringify(S,pr))}).then(function(r){say2(r.ok?"Saved to Google Sheet "+new Date().toLocaleTimeString():"Not saved: "+(r.error||"error"))}).catch(function(){say2("Offline. Will save on your next change")})},1200)}
+function pull(){if(!C.url){READY=true;return}say2("Loading…");api({action:"load"}).then(function(r){if(!r.ok){READY=true;say2("Sheet error: "+(r.error||""));return}var d=r.state;
+if(d&&(d._t||0)>(S._t||0)){S=Object.assign({items:[],exp:[],miles:[],rate:0.70},d);return persistPhotos().then(function(){try{localStorage.setItem(KEY,JSON.stringify(S,pr))}catch(e){}return hydrate()}).then(function(){READY=true;render();say2("Loaded from Google Sheet");if(syncPhotos())save();fetchPhotos();dRun()})}
+READY=true;say2("Synced");if(!d||(S._t||0)>(d._t||0))push();if(syncPhotos())save();fetchPhotos();dRun()}).catch(function(){READY=true;say2("Offline. Using this device’s copy")})}
 function conn(){C={url:$("c_u").value.trim(),token:$("c_t").value};try{localStorage.setItem(CK,JSON.stringify(C))}catch(e){}pull()}
-function save(){S._t=Date.now();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){alert("Phone storage is full. Remove some photos.")}push()}
+function save(){S._t=Date.now();persistPhotos();syncPhotos();try{localStorage.setItem(KEY,JSON.stringify(S,pr))}catch(e){alert("This browser’s saved-data limit was reached. Copy a Backup now and tell Claude.")}push()}
 function $(i){return document.getElementById(i)}
 window.alert=function(t){var b=$("tb");if(!b){b=document.createElement("div");b.id="tb";b.style.cssText="position:fixed;left:12px;right:12px;bottom:calc(14px + env(safe-area-inset-bottom,0px));background:var(--tx);color:var(--bg);padding:12px 14px;border-radius:10px;z-index:9;font-size:14px";document.body.appendChild(b)}b.textContent=t;b.style.display="block";clearTimeout(b._t);b._t=setTimeout(function(){b.style.display="none"},4000)};
 function n(v){v=parseFloat(v);return isNaN(v)?0:v}
@@ -131,7 +172,7 @@ sochips("s_o",plats(i.plat).length?plats(i.plat):PLATS,plats(i.plat).length===1?
 function saveSale(id){var p=$("s_p").value,d=$("s_d").value;if(p===""||!d||!$("s_o").value){alert("Enter the platform sold on, date sold and sale price");return}
 S.items.forEach(function(i){if(i.id===id){i.sd=d;i.so=$("s_o").value;i.price=p;i.fees=$("s_f").value;i.ship=$("s_s").value}});sell=null;save();render()}
 function saveItem(){var ex=S.items.filter(function(i){return i.id===edit})[0]||{};var o={id:edit||uid()};["name","sku","cat","bn","bin","acq","plat","bd","src","cost","sd","so","price","fees","ship","note"].forEach(function(k){var el=$("a_"+k);o[k]=el?el.value:(ex[k]==null?"":ex[k])});
-o.sku=padSku(o.sku);var dup=S.items.filter(function(i){return i.id!==o.id&&o.sku&&i.sku===o.sku})[0];if(dup){alert("SKU "+o.sku+" is already used by "+(dup.name||"another item")+". Pick a different number.");return}o.photos=PHS.slice();o.photo=PHS[0]||"";o.auto=!!(AUTO&&o.name===AT);if(!edit&&o.bn)S.lastBin=o.bn;if(!o.name.trim()&&!o.photo){alert("Add a title or a photo");return}
+o.sku=padSku(o.sku);var dup=S.items.filter(function(i){return i.id!==o.id&&o.sku&&i.sku===o.sku})[0];if(dup){alert("SKU "+o.sku+" is already used by "+(dup.name||"another item")+". Pick a different number.");return}o.photos=PHS.slice();o.photo=PHS[0]||"";var op=JSON.stringify(ex.photos||(ex.photo?[ex.photo]:[]));if(JSON.stringify(o.photos)!==op){o.pv=Date.now();DIRTY["i:"+o.id]=1}else o.pv=ex.pv;o.hp=o.photos.length?1:0;o.auto=!!(AUTO&&o.name===AT);if(!edit&&o.bn)S.lastBin=o.bn;if(!o.name.trim()&&!o.photo){alert("Add a title or a photo");return}
 if(edit)S.items=S.items.map(function(i){return i.id===edit?o:i});else S.items.push(o);
 edit=null;PHS=[];BIG=[];AUTO=false;AT="";PHid=null;save();render()}
 var dl=null;
@@ -216,7 +257,7 @@ function rpv(){return RP?'<img src="'+RP+'" style="max-width:140px;border-radius
 function rpv2(){var b=$("r_pv");if(b)b.innerHTML=rpv()}
 function pickR(inp){shrink(inp,900,0.6,function(u){RP=u;rpv2()})}
 function addR(){var a=n($("r_a").value),nt=$("r_n").value.trim(),t=$("r_t").value,d=$("r_d").value;if(!RP&&!a&&!nt){alert("Add a photo, an amount or a note");return}
-S.rcp=S.rcp||[];S.rcp.push({id:uid(),d:d,a:a,t:t,n:nt,photo:RP});if($("r_x").checked&&a)S.exp.push({id:uid(),d:d,a:a,c:RX[t]||"Other",n:nt||"Receipt"});RP="";save();render()}
+S.rcp=S.rcp||[];var rid=uid();S.rcp.push({id:rid,d:d,a:a,t:t,n:nt,photo:RP,pv:RP?Date.now():0,hp:RP?1:0});if(RP)DIRTY["r:"+rid]=1;if($("r_x").checked&&a)S.exp.push({id:uid(),d:d,a:a,c:RX[t]||"Other",n:nt||"Receipt"});RP="";save();render()}
 function delR(id){if(rdl!==id){rdl=id;render();return}rdl=null;S.rcp=(S.rcp||[]).filter(function(r){return r.id!==id});save();render()}
 function rcp(){var h='<div class="card"><div class="g">'+
 '<div><label>Date</label><input type="date" id="r_d" value="'+today()+'"></div>'+
@@ -323,11 +364,11 @@ S.items.forEach(function(i){L.push([i.bd,i.name,i.cost,i.sd,i.price,i.fees,i.shi
 L.push("","EXPENSES (date | category | amount | note)");S.exp.forEach(function(x){L.push([x.d,x.c,x.a,x.n].join(" | "))});
 L.push("","MILEAGE (date | miles | type | purpose | odometer)");trips().forEach(function(x){L.push([x.d,x.m,ty(x),x.p,x.e!=null?x.e:""].join(" | "))});
 $("io").innerHTML='<label>Copy this and paste it into Notes or an email to yourself. It’s for reading only, not for restoring:</label><textarea id="ta" rows="10">'+esc(L.join("\n"))+'</textarea><p><button class="b s" onclick="cp()">Copy</button></p>'}
-function exp(){$("io").innerHTML='<label>This is your whole backup in code form, so it looks like random characters. Copy it and save it in Notes. To restore, tap Restore and paste it back:</label><textarea id="ta" rows="8">'+esc(JSON.stringify(S))+'</textarea><p><button class="b s" onclick="cp()">Copy</button></p>'}
+function exp(){$("io").innerHTML='<label>This is your whole backup in code form, so it looks like random characters. Copy it and save it in Notes. To restore, tap Restore and paste it back:</label><textarea id="ta" rows="8">'+esc(JSON.stringify(S,pr))+'</textarea><p><button class="b s" onclick="cp()">Copy</button></p>'}
 function cp(){var t=$("ta");t.select();try{document.execCommand("copy")}catch(e){}}
 function imp(){$("io").innerHTML='<label>Paste backup text:</label><textarea id="ta" rows="6"></textarea><p><button class="b" onclick="doImp()">Restore</button></p>'}
 function doImp(){try{var d=JSON.parse($("ta").value);if(!d.items)throw 0;S=Object.assign({items:[],exp:[],miles:[],rate:0.70},d);save();render()}catch(e){alert("That backup text isn’t valid")}}
-render();
+READY=!C.url;render();persistPhotos().then(function(){try{localStorage.setItem(KEY,JSON.stringify(S,pr))}catch(e){}return hydrate()}).then(function(ch){if(ch)render()});
 if(C.url)say2("Connecting…");pull();document.addEventListener("visibilitychange",function(){if(!document.hidden)pull()});
 </script>
 </body>
