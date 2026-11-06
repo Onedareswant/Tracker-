@@ -122,8 +122,8 @@ var h='<div class="card"><b>Bulk haul cost helper</b><div class="g">'+
 '<div class="f"><label>Extra location note (optional)</label><input id="a_bin" value="'+esc(e.bin)+'" placeholder="e.g. Bin 3, Shelf B"></div>'+
 pchips(e.plat)+
 '<div class="f"><label>How you got it</label><select id="a_acq" onchange="acqch()">'+opts(ACQ,e.acq||"Bought")+'</select></div>'+
-'<div><label>Where from / who gave it</label><input id="a_src" value="'+esc(e.src)+'" placeholder="Goodwill, estate sale…"></div>'+
-'<div><label>Date acquired (optional)</label><input type="date" id="a_bd" value="'+(e.id?esc(e.bd):today())+'"><button type="button" class="b s" style="margin-top:6px;padding:6px 10px;font-size:13px" onclick="$(\'a_bd\').value=\'\'">No date</button></div>'+
+srcBox(e)+
+'<div><label>Date acquired (optional)</label><input type="date" id="a_bd" value="'+(e.id?esc(e.bd):adv())+'" onchange="if(!edit)setAD(this.value)"><button type="button" class="b s" style="margin-top:6px;padding:6px 10px;font-size:13px" onclick="$(\'a_bd\').value=\'\';if(!edit)setAD(\'\')">No date</button></div>'+
 '<div><label>Cost paid ($)</label><input type="number" step="0.01" inputmode="decimal" id="a_cost" value="'+esc(e.cost!=null&&e.cost!==""?e.cost:hav())+'"></div>'+
 (e.sd?'<div><label>Date sold</label><input type="date" id="a_sd" value="'+esc(e.sd)+'"></div>'+
 sochips("a_so",PLATS,e.so||"")+
@@ -156,7 +156,7 @@ PLATS.map(function(p){return '<button type="button" class="chip pc'+(a.indexOf(p
 '</div><input type="hidden" id="a_plat" value="'+esc(a.join(", "))+'"></div>'}
 function sochips(id,list,v){return '<div class="f"><label>Sold on (tap to select)</label><div id="'+id+'c" style="display:flex;flex-wrap:wrap;gap:6px">'+list.map(function(p){return '<button type="button" class="chip'+(p===v?' on':'')+'" data-p="'+esc(p)+'" onclick="sopick(\''+id+'\',this)">'+esc(p)+'</button>'}).join("")+'</div><input type="hidden" id="'+id+'" value="'+esc(v)+'"></div>'}
 function sopick(id,b){var on=b.classList.contains("on");document.querySelectorAll("#"+id+"c .chip").forEach(function(c){c.classList.remove("on")});if(!on)b.classList.add("on");$(id).value=on?"":b.getAttribute("data-p")}
-function acqch(){var a=$("a_acq").value;if(a==="Bought"){if(!$("a_bd").value)$("a_bd").value=today();if($("a_cost").value==="0")$("a_cost").value=hav()}else{$("a_bd").value="";$("a_cost").value="0"}}
+function acqch(){var a=$("a_acq").value;if(a==="Bought"){if(!$("a_bd").value)$("a_bd").value=adv()||today();if($("a_cost").value==="0")$("a_cost").value=hav()}else{$("a_bd").value="";$("a_cost").value="0"}}
 function pm(a,s){return a.length===s.length&&s.every(function(x){return a.indexOf(x)>-1})}
 function psync(){var a=[];document.querySelectorAll("#a_pc .pc.on").forEach(function(b){a.push(b.getAttribute("data-p"))});$("a_plat").value=a.join(", ");document.querySelectorAll("#a_pc .pre").forEach(function(b){b.classList.toggle("on",pm(a,b.getAttribute("data-s").split(",")))})}
 function ptog(b){b.classList.toggle("on");psync()}
@@ -172,7 +172,7 @@ sochips("s_o",plats(i.plat).length?plats(i.plat):PLATS,plats(i.plat).length===1?
 function saveSale(id){var p=$("s_p").value,d=$("s_d").value;if(p===""||!d||!$("s_o").value){alert("Enter the platform sold on, date sold and sale price");return}
 S.items.forEach(function(i){if(i.id===id){i.sd=d;i.so=$("s_o").value;i.price=p;i.fees=$("s_f").value;i.ship=$("s_s").value}});sell=null;save();render()}
 function saveItem(){var ex=S.items.filter(function(i){return i.id===edit})[0]||{};var o={id:edit||uid()};["name","sku","cat","bn","bin","acq","plat","bd","src","cost","sd","so","price","fees","ship","note"].forEach(function(k){var el=$("a_"+k);o[k]=el?el.value:(ex[k]==null?"":ex[k])});
-o.sku=padSku(o.sku);var dup=S.items.filter(function(i){return i.id!==o.id&&o.sku&&i.sku===o.sku})[0];if(dup){alert("SKU "+o.sku+" is already used by "+(dup.name||"another item")+". Pick a different number.");return}o.photos=PHS.slice();o.photo=PHS[0]||"";var op=JSON.stringify(ex.photos||(ex.photo?[ex.photo]:[]));if(JSON.stringify(o.photos)!==op){o.pv=Date.now();DIRTY["i:"+o.id]=1}else o.pv=ex.pv;o.hp=o.photos.length?1:0;o.auto=!!(AUTO&&o.name===AT);if(!edit&&o.bn)S.lastBin=o.bn;if(!o.name.trim()&&!o.photo){alert("Add a title or a photo");return}
+o.sku=padSku(o.sku);var dup=S.items.filter(function(i){return i.id!==o.id&&o.sku&&i.sku===o.sku})[0];if(dup){alert("SKU "+o.sku+" is already used by "+(dup.name||"another item")+". Pick a different number.");return}o.photos=PHS.slice();o.photo=PHS[0]||"";var op=JSON.stringify(ex.photos||(ex.photo?[ex.photo]:[]));if(JSON.stringify(o.photos)!==op){o.pv=Date.now();DIRTY["i:"+o.id]=1}else o.pv=ex.pv;o.hp=o.photos.length?1:0;o.auto=!!(AUTO&&o.name===AT);if(!edit&&o.bn)S.lastBin=o.bn;if(!edit)S.lastSrc=o.src;if(!o.name.trim()&&!o.photo){alert("Add a title or a photo");return}
 if(edit)S.items=S.items.map(function(i){return i.id===edit?o:i});else S.items.push(o);
 edit=null;PHS=[];BIG=[];AUTO=false;AT="";PHid=null;save();render()}
 var dl=null;
@@ -236,6 +236,11 @@ return h}
 var EE=null,ME=null;
 function padSku(v){v=(v||"").trim();return /^\d{1,3}$/.test(v)?("000"+v).slice(-4):v}
 function goTo(id){setTimeout(function(){var a=$(id);if(a&&a.scrollIntoView)a.scrollIntoView({block:"center"})},50)}
+function adv(){try{var r=JSON.parse(localStorage.getItem("acqd"));if(r&&r.set)return r.d||""}catch(e){}return today()}
+function setAD(v){try{localStorage.setItem("acqd",JSON.stringify({d:v,set:true}))}catch(e){}}
+function srcList(){var c={};S.items.forEach(function(i){var k=(i.src||"").trim();if(k)c[k]=(c[k]||0)+1});return Object.keys(c).sort(function(a,b){return c[b]-c[a]||(a<b?-1:1)})}
+function pickSrc(b){$("a_src").value=b.getAttribute("data-s")}
+function srcBox(e){var l=srcList();return '<div class="f"><label>Where from / who gave it</label><input id="a_src" list="src_l" value="'+esc(e.id?e.src:(S.lastSrc||""))+'" placeholder="Goodwill, estate sale\u2026"><datalist id="src_l">'+l.map(function(x){return '<option value="'+esc(x)+'">'}).join("")+'</datalist>'+(l.length?'<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">'+l.slice(0,6).map(function(x){return '<button type="button" class="chip" data-s="'+esc(x)+'" onclick="pickSrc(this)">'+esc(x)+'</button>'}).join("")+'</div>':"")+'</div>'}
 function mdv(){try{var r=JSON.parse(localStorage.getItem("mdate"));if(r&&r.day===today()&&r.d)return r.d}catch(e){}return today()}
 function setMD(v){try{localStorage.setItem("mdate",JSON.stringify({d:v,day:today()}))}catch(e){}}
 var PHS=[],BIG=[],RI=null,AUTO=false,AT="",PHid=null,FQ="",FC="",FB="",FD="",FS="",RP="",RB=null,rdl=null;
