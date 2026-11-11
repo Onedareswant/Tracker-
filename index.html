@@ -8,34 +8,54 @@
 :root{--bg:#fafaf7;--card:#fff;--tx:#1f2421;--mut:#6b726d;--bd:#e3e5df;--ac:#2f7d5b;--acx:#fff;--neg:#b3412f;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#151816;--card:#1e2220;--tx:#eceee9;--mut:#9aa39c;--bd:#2f3532;--ac:#4fb68a;--acx:#0d1a14;--neg:#e47b69}}
 :root[data-theme="dark"]{--bg:#151816;--card:#1e2220;--tx:#eceee9;--mut:#9aa39c;--bd:#2f3532;--ac:#4fb68a;--acx:#0d1a14;--neg:#e47b69}
-*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px);-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.4 -apple-system,system-ui,"Segoe UI",Roboto,sans-serif}
-.w{max-width:760px;margin:0 auto;padding:14px}
-h1{font-size:20px;margin:4px 0 12px}h2{font-size:16px;margin:18px 0 8px}
-nav{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}nav button{flex:1 1 30%}
-nav button{flex:1;padding:10px 2px;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:10px;font-size:13px}
+.w{max-width:640px;margin:0 auto;padding:14px 14px 28px}
+.hd{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:4px 0 8px}
+h1{font-size:21px;margin:0;letter-spacing:-.2px}
+#sy{font-size:12px;color:var(--mut);text-align:right;max-width:50%;line-height:1.25}
+h2{font-size:15px;font-weight:700;margin:20px 2px 8px}
+nav{position:sticky;top:0;z-index:5;display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:6px 0;margin:0 0 8px;background:var(--bg)}
+nav button{min-height:36px;padding:6px 4px;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:10px;font-size:13px;font-weight:600;line-height:1.15}
+nav button:last-child:nth-child(4n+3){grid-column:span 2}
 nav button.on{background:var(--ac);color:var(--acx);border-color:var(--ac)}
-.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px;margin-bottom:10px}
-.g{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-label{display:block;font-size:12px;color:var(--mut)}
-input,select,textarea{width:100%;padding:9px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);font:inherit;font-size:16px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px;margin:0 0 12px;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.card p{margin:12px 0 0}.card p:first-child{margin-top:0}
+.g{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 12px;align-items:end}.g>*{min-width:0}
+label{display:block;font-size:12px;font-weight:600;color:var(--mut);margin:0 0 5px;line-height:1.25}
+.card>label{margin-top:12px}.card>label:first-child{margin-top:0}
+input,select,textarea{width:100%;min-height:44px;padding:10px 12px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx);font:inherit;font-size:16px}
+textarea{min-height:0}
+input[type=date]{-webkit-appearance:none;appearance:none;text-align:left}
+input[type=file]{min-height:0;padding:9px}
+input[type=checkbox]{width:auto;min-height:0}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--ac);border-color:var(--ac)}
 .f{grid-column:1/-1}
-.b{padding:10px 14px;border-radius:10px;border:1px solid var(--ac);background:var(--ac);color:var(--acx);font-size:15px}
-.b.s{background:none;color:var(--ac)}.b.x{border-color:var(--neg);color:var(--neg);background:none;padding:6px 10px;font-size:13px}
-.row{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.b{min-height:44px;padding:10px 16px;border-radius:12px;border:1px solid var(--ac);background:var(--ac);color:var(--acx);font-size:15px;font-weight:600;line-height:1.15}
+.b.s{background:none;color:var(--ac)}.b.x{border-color:var(--neg);color:var(--neg);background:none}
+.card p:has(>.b){display:flex;gap:8px;flex-wrap:wrap}.card p:has(>.b)>.b{flex:1 1 0;padding:10px 6px}.card p+.mut{margin-top:10px}.lr{display:flex;justify-content:space-between;align-items:center;gap:6px}.lk{border:0;background:none;color:var(--ac);font-size:12px;font-weight:700;padding:0;min-height:0}
+.it>p:has(>.b){display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:8px}
+.it>p>.b{min-height:40px;padding:8px 4px;font-size:13px}
+.it img[style*="float"]{width:72px!important;height:72px!important;border-radius:10px!important;margin-right:12px!important}
+.row{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.row:has(>div>.b){flex-direction:column}
+.row>div:has(>.b){display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:8px;width:100%}
+.row>div:has(>.b)>.b{min-height:38px;padding:6px 4px;font-size:13px}
 .mut{color:var(--mut);font-size:13px}.pos{color:var(--ac)}.neg{color:var(--neg)}
-.tag{font-size:11px;padding:2px 7px;border-radius:99px;border:1px solid var(--bd);color:var(--mut)}
-.stat{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--bd)}
+.tag{font-size:11px;padding:3px 8px;border-radius:99px;border:1px solid var(--bd);color:var(--mut);white-space:nowrap;align-self:flex-start}
+.stat{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--bd)}
 .stat:last-child{border:0}.big{font-weight:700;font-size:17px}
 .ov{overflow-x:auto}.hide{display:none}
-.chip{padding:8px 12px;border-radius:99px;border:1px solid var(--bd);background:var(--bg);color:var(--tx);font-size:14px}.chip.on{background:var(--ac);color:var(--acx);border-color:var(--ac)}
+.chip{min-height:42px;padding:8px 12px;border-radius:12px;border:1px solid var(--bd);background:var(--bg);color:var(--tx);font-size:14px;line-height:1.2;display:inline-flex;align-items:center;justify-content:center;text-align:center}
+.chip.on{background:var(--ac);color:var(--acx);border-color:var(--ac)}
+.cg{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:6px}
+.cg>.chip:last-child:nth-child(odd){grid-column:1/-1}
 </style>
 </head>
 <body>
 <div class="w">
-<h1>Reseller Tax Tracker</h1>
+<div class="hd"><h1>Reseller Tax Tracker</h1><div id="sy"></div></div>
 <nav id="nav"></nav>
-<div class="mut" id="sy" style="text-align:right;font-size:12px"></div>
 <div id="app"></div>
 <p class="mut">Data saves in this browser and, once connected, in your Google Sheet. This is a record-keeping aid, not tax advice; confirm figures with a tax pro.</p>
 </div>
@@ -123,7 +143,7 @@ var h='<div class="card"><b>Bulk haul cost helper</b><div class="g">'+
 pchips(e.plat)+
 '<div class="f"><label>How you got it</label><select id="a_acq" onchange="acqch()">'+opts(ACQ,e.acq||"Bought")+'</select></div>'+
 srcBox(e)+
-'<div><label>Date acquired (optional)</label><input type="date" id="a_bd" value="'+(e.id?esc(e.bd):adv())+'" onchange="if(!edit)setAD(this.value)"><button type="button" class="b s" style="margin-top:6px;padding:6px 10px;font-size:13px" onclick="$(\'a_bd\').value=\'\';if(!edit)setAD(\'\')">No date</button></div>'+
+'<div><label class="lr">Date acquired <button type="button" class="lk" onclick="$(\'a_bd\').value=\'\';if(!edit)setAD(\'\')">No date</button></label><input type="date" id="a_bd" value="'+(e.id?esc(e.bd):adv())+'" onchange="if(!edit)setAD(this.value)"></div>'+
 '<div><label>Cost paid ($)</label><input type="number" step="0.01" inputmode="decimal" id="a_cost" value="'+esc(e.cost!=null&&e.cost!==""?e.cost:hav())+'"></div>'+
 (e.sd?'<div><label>Date sold</label><input type="date" id="a_sd" value="'+esc(e.sd)+'"></div>'+
 sochips("a_so",PLATS,e.so||"")+
@@ -134,9 +154,9 @@ sochips("a_so",PLATS,e.so||"")+
 '</div><p><button class="b" onclick="saveItem()">'+(e.id?"Update item":"Add item")+'</button> '+(e.id?'<button class="b s" onclick="go(\'inv\')">Cancel</button>':'')+'</p></div>';
 var L=S.items.slice().sort(function(a,b){return (b.bd||"")>(a.bd||"")?1:-1});
 setFK();h+='<h2>'+L.length+' items</h2>';
-h+='<div class="card"><b>Bins</b> <span class="mut">(tap a bin to see what\u2019s in it)</span><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">'+BINS.map(function(b){var c=S.items.filter(function(i){return !i.sd&&i.bn===b[0]}).length;return '<button type="button" class="chip bc'+(FB===b[0]?' on':'')+'" data-c="'+b[0]+'" onclick="bpick(this)">Bin '+b[1]+': '+b[0]+' ('+c+')</button>'}).join("")+'<button type="button" class="chip bc'+(FB==="__none"?' on':'')+'" data-c="__none" onclick="bpick(this)">Jackets ('+S.items.filter(function(i){return !i.sd&&!i.bn&&(i.cat||"Clothes")==="Clothes"}).length+')</button></div></div>';
+h+='<div class="card"><b>Bins</b> <span class="mut">(tap a bin to see what\u2019s in it)</span><div class="cg">'+BINS.map(function(b){var c=S.items.filter(function(i){return !i.sd&&i.bn===b[0]}).length;return '<button type="button" class="chip bc'+(FB===b[0]?' on':'')+'" data-c="'+b[0]+'" onclick="bpick(this)">Bin '+b[1]+': '+b[0]+' ('+c+')</button>'}).join("")+'<button type="button" class="chip bc'+(FB==="__none"?' on':'')+'" data-c="__none" onclick="bpick(this)">Jackets ('+S.items.filter(function(i){return !i.sd&&!i.bn&&(i.cat||"Clothes")==="Clothes"}).length+')</button></div></div>';
 var dcn={},nd=0;S.items.forEach(function(i){if(i.bd)dcn[i.bd]=(dcn[i.bd]||0)+1;else nd++});
-h+='<div class="card"><b>Date acquired</b> <span class="mut">(tap a date to see everything from that day)</span><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;max-height:150px;overflow:auto">'+Object.keys(dcn).sort().reverse().map(function(d){return '<button type="button" class="chip dc'+(FD===d?' on':'')+'" data-d="'+d+'" onclick="dpick(this)">'+d+' ('+dcn[d]+')</button>'}).join("")+(nd?'<button type="button" class="chip dc'+(FD==="__nodate"?' on':'')+'" data-d="__nodate" onclick="dpick(this)">No date ('+nd+')</button>':'')+'</div></div>';
+h+='<div class="card"><b>Date acquired</b> <span class="mut">(tap a date to see everything from that day)</span><div class="cg" style="max-height:176px;overflow:auto">'+Object.keys(dcn).sort().reverse().map(function(d){return '<button type="button" class="chip dc'+(FD===d?' on':'')+'" data-d="'+d+'" onclick="dpick(this)">'+d+' ('+dcn[d]+')</button>'}).join("")+(nd?'<button type="button" class="chip dc'+(FD==="__nodate"?' on':'')+'" data-d="__nodate" onclick="dpick(this)">No date ('+nd+')</button>':'')+'</div></div>';
 h+='<div class="card"><div class="g"><div class="f"><label>Find an item (title, SKU, bin)</label><input id="f_q" value="'+esc(FQ)+'" placeholder="Type 1 for SKU 0001, or a title, bin…" oninput="filt()"></div><div><label>Category</label><select id="f_c" onchange="filt()"><option value="">All</option>'+ITYPES.map(function(x){return '<option'+(FC===x?' selected':'')+'>'+x+'</option>'}).join("")+'</select></div><div><label>Show</label><select id="f_s" onchange="filt()"><option value="">All</option><option value="stock"'+(FS==="stock"?' selected':'')+'>In stock</option><option value="sold"'+(FS==="sold"?' selected':'')+'>Sold</option></select></div></div></div>';
 L.forEach(function(i){var sold=!!i.sd,kk=/^\d+$/.test(i.sku||"")?String(+i.sku):"",qs=[i.name,i.sku,i.bin,binOf(i.bn)?"bin "+binOf(i.bn):(i.cat==="Clothes"?"jackets":""),i.cat,i.plat,i.src,i.note].join(" ").toLowerCase();
 h+='<div class="card it" data-q="'+esc(qs)+'" data-c="'+esc(i.cat||"Clothing")+'" data-s="'+(sold?"sold":"stock")+'" data-b="'+esc(i.bn||"")+'" data-k="'+kk+'" data-d="'+esc(i.bd||"")+'"'+(fm(qs,i.cat||"Clothes",sold?"sold":"stock",i.bn||"",kk,i.bd||"")?'':' style="display:none"')+'><div class="row"><div>'+(i.photo?'<img src="'+i.photo+'" style="width:64px;height:64px;object-fit:cover;border-radius:8px;float:left;margin-right:10px">':'')+'<b>'+esc(i.name||"Untitled")+'</b><div class="mut">'+esc(i.sku?"#"+i.sku+" · ":"")+esc((binOf(i.bn)?"Bin "+binOf(i.bn)+" · ":(i.cat==="Clothes"?"Jackets · ":""))+(i.bin?i.bin+" · ":""))+esc((i.cat||"Clothes")+" · ")+esc(i.plat)+" · "+esc(i.acq||"Bought")+(i.bd?" "+esc(i.bd):" (no date)")+(i.src?" at "+esc(i.src):"")+'</div></div>'+
@@ -149,12 +169,12 @@ var H={t:"",c:""};
 function hav(){var t=n(H.t),c=n(H.c);return t>0&&c>0?(Math.round(t/c*100)/100).toFixed(2):""}
 function hv(){H.t=$("h_t").value;H.c=$("h_n").value;var a=hav();$("h_r").textContent="Average cost per item: "+(a?"$"+a:"—")+". It fills “Cost paid” below for each new item.";if(!edit&&a)$("a_cost").value=a}
 function plats(v){return (v||"").split(",").map(function(s){return s.trim()}).filter(Boolean)}
-function pchips(v){var a=plats(v);return '<div class="f"><label>Platforms (tap to select)</label><div id="a_pc" style="display:flex;flex-wrap:wrap;gap:6px">'+
+function pchips(v){var a=plats(v);return '<div class="f"><label>Platforms (tap to select)</label><div id="a_pc" class="cg">'+
 '<button type="button" class="chip pre'+(pm(a,["eBay","Depop","Vinted","Poshmark"])?' on':'')+'" data-s="eBay,Depop,Vinted,Poshmark" onclick="pset(this)">All platforms</button>'+
 '<button type="button" class="chip pre'+(pm(a,["Depop","eBay"])?' on':'')+'" data-s="Depop,eBay" onclick="pset(this)">Depop + eBay</button>'+
 PLATS.map(function(p){return '<button type="button" class="chip pc'+(a.indexOf(p)>-1?' on':'')+'" data-p="'+p+'" onclick="ptog(this)">'+p+'</button>'}).join("")+
 '</div><input type="hidden" id="a_plat" value="'+esc(a.join(", "))+'"></div>'}
-function sochips(id,list,v){return '<div class="f"><label>Sold on (tap to select)</label><div id="'+id+'c" style="display:flex;flex-wrap:wrap;gap:6px">'+list.map(function(p){return '<button type="button" class="chip'+(p===v?' on':'')+'" data-p="'+esc(p)+'" onclick="sopick(\''+id+'\',this)">'+esc(p)+'</button>'}).join("")+'</div><input type="hidden" id="'+id+'" value="'+esc(v)+'"></div>'}
+function sochips(id,list,v){return '<div class="f"><label>Sold on (tap to select)</label><div id="'+id+'c" class="cg">'+list.map(function(p){return '<button type="button" class="chip'+(p===v?' on':'')+'" data-p="'+esc(p)+'" onclick="sopick(\''+id+'\',this)">'+esc(p)+'</button>'}).join("")+'</div><input type="hidden" id="'+id+'" value="'+esc(v)+'"></div>'}
 function sopick(id,b){var on=b.classList.contains("on");document.querySelectorAll("#"+id+"c .chip").forEach(function(c){c.classList.remove("on")});if(!on)b.classList.add("on");$(id).value=on?"":b.getAttribute("data-p")}
 function acqch(){var a=$("a_acq").value;if(a==="Bought"){if(!$("a_bd").value)$("a_bd").value=adv()||today();if($("a_cost").value==="0")$("a_cost").value=hav()}else{$("a_bd").value="";$("a_cost").value="0"}}
 function pm(a,s){return a.length===s.length&&s.every(function(x){return a.indexOf(x)>-1})}
@@ -185,12 +205,12 @@ function exps(){var ex=EE&&S.exp.filter(function(x){return x.id===EE})[0]||{};va
 '<div class="f"><label>Description / vendor</label><input id="e_n" value="'+esc(ex.n)+'" placeholder="Poly mailers, Amazon"></div></div>'+
 '<p><button class="b" onclick="addExp()">'+(ex.id?"Update expense":"Add expense")+'</button>'+(ex.id?' <button class="b s" onclick="EE=null;render()">Cancel</button>':'')+'</p></div>';
 S.exp.slice().sort(function(a,b){return a.d<b.d?1:-1}).forEach(function(x){
-h+='<div class="card"><div class="row"><div><b>'+m(n(x.a))+'</b> · '+esc(x.c)+'<div class="mut">'+esc(x.d)+' · '+esc(x.n)+'</div></div><div><button class="b s" onclick="EE=\''+x.id+'\';render();goTo(\'e_a\')">Edit</button> <button class="b x" onclick="delE(\''+x.id+'\')">Delete</button></div></div></div>'});
+h+='<div class="card"><div class="row"><div><b>'+m(n(x.a))+'</b> · '+esc(x.c)+'<div class="mut">'+esc(x.d)+' · '+esc(x.n)+'</div></div><div><button class="b s" onclick="EE=\''+x.id+'\';render();goTo(\'e_a\')">Edit</button> <button class="b x" onclick="delE(\''+x.id+'\')">'+(edl===x.id?"Tap again to delete":"Delete")+'</button></div></div></div>'});
 return h}
 function addExp(){var a=n($("e_a").value);if(!a){alert("Enter an amount");return}
 var o={d:$("e_d").value,a:a,c:$("e_c").value,n:$("e_n").value};
 if(EE){S.exp.forEach(function(x){if(x.id===EE){x.d=o.d;x.a=o.a;x.c=o.c;x.n=o.n}});EE=null}else{o.id=uid();S.exp.push(o)}save();render()}
-function delE(id){S.exp=S.exp.filter(function(x){return x.id!==id});save();render()}
+function delE(id){if(edl!==id){edl=id;render();return}edl=null;S.exp=S.exp.filter(function(x){return x.id!==id});save();render()}
 
 var MT=["Business","Personal","Commute"];
 function ty(x){return x.t||"Business"}
@@ -212,14 +232,15 @@ var h='<div class="card"><div class="g">'+
 '<div class="card"><b>Schedule C, Part IV (line 44), '+yr+'</b>'+st("a) Business miles",r1(sb),"")+st("b) Commuting miles",r1(sc),"")+st("c) Other personal miles",r1(sp),"")+
 '<div class="mut">Odometer math starts on your tracking start date; earlier trips still count for the deduction. Rates: 72.5¢ before Jul 1, 2026, 76¢ after. Commuting to a regular workplace isn’t deductible. Line 44 covers the whole year, so add miles from before this log started.</div></div>';
 trips().reverse().forEach(function(x){var t=ty(x);
-h+='<div class="card"><div class="row"><div><b>'+x.m+' mi</b> · '+(t==="Business"?m(x.m*rt(x.d)):"no deduction")+'<div class="mut">'+esc(x.d)+' · '+esc(x.p)+(x.e!=null?' · odo '+x.e:'')+'</div></div><div><button class="b s" onclick="ME=\''+x.id+'\';render();goTo(\'m_m\')">Edit</button> <button class="b s" onclick="cycM(\''+x.id+'\')">'+t+'</button> <button class="b x" onclick="delM(\''+x.id+'\')">×</button></div></div></div>'});
+h+='<div class="card"><div class="row"><div><b>'+x.m+' mi</b> · '+(t==="Business"?m(x.m*rt(x.d)):"no deduction")+'<div class="mut">'+esc(x.d)+' · '+esc(x.p)+(x.e!=null?' · odo '+x.e:'')+'</div></div><div><button class="b s" onclick="ME=\''+x.id+'\';render();goTo(\'m_m\')">Edit</button> <button class="b s" onclick="cycM(\''+x.id+'\')">'+t+'</button> <button class="b x" onclick="delM(\''+x.id+'\')">'+(mdl===x.id?"Tap again to delete":"×")+'</button></div></div></div>'});
 return h}
 function cycM(id){S.miles.forEach(function(x){if(x.id===id)x.t=MT[(MT.indexOf(ty(x))+1)%3]});save();render()}
 function addM(t){if(ME){var m=n($("m_m").value),p0=$("m_p").value.trim(),d0=$("m_d").value;if(!(m>0)||!p0||!d0){alert("Enter a date, a purpose and the miles");return}
 S.miles.forEach(function(x){if(x.id===ME){if(m!==x.m)x.e=null;x.m=m;x.d=d0;x.p=p0;x.t=t}});ME=null;save();render();return}
 var c=mcalc(),p=$("m_p").value.trim();if(!c||!(c.m>0)||!p||!$("m_d").value){alert("Enter a date, a purpose, and either a higher odometer reading or trip miles");return}
 S.miles.push({id:uid(),d:$("m_d").value,m:c.m,e:c.e,p:p,t:t});save();render()}
-function delM(id){S.miles=S.miles.filter(function(x){return x.id!==id});save();render()}
+var mdl=null,edl=null;
+function delM(id){if(mdl!==id){mdl=id;render();return}mdl=null;S.miles=S.miles.filter(function(x){return x.id!==id});save();render()}
 
 function plt(){var rows={};PLATS.forEach(function(p){rows[p]={c:0,s:0,f:0}});var un={c:0,s:0,f:0},ys={};ys[yr]=1;
 S.items.forEach(function(i){if(!i.sd)return;ys[yrOf(i.sd)]=1;if(yrOf(i.sd)!==yr)return;var r=!i.so?un:(rows[i.so]||(rows[i.so]={c:0,s:0,f:0}));r.c++;r.s+=n(i.price);r.f+=profit(i)});
@@ -240,7 +261,7 @@ function adv(){try{var r=JSON.parse(localStorage.getItem("acqd"));if(r&&r.set)re
 function setAD(v){try{localStorage.setItem("acqd",JSON.stringify({d:v,set:true}))}catch(e){}}
 function srcList(){var c={};S.items.forEach(function(i){var k=(i.src||"").trim();if(k)c[k]=(c[k]||0)+1});return Object.keys(c).sort(function(a,b){return c[b]-c[a]||(a<b?-1:1)})}
 function pickSrc(b){$("a_src").value=b.getAttribute("data-s")}
-function srcBox(e){var l=srcList();return '<div class="f"><label>Where from / who gave it</label><input id="a_src" list="src_l" value="'+esc(e.id?e.src:(S.lastSrc||""))+'" placeholder="Goodwill, estate sale\u2026"><datalist id="src_l">'+l.map(function(x){return '<option value="'+esc(x)+'">'}).join("")+'</datalist>'+(l.length?'<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">'+l.slice(0,6).map(function(x){return '<button type="button" class="chip" data-s="'+esc(x)+'" onclick="pickSrc(this)">'+esc(x)+'</button>'}).join("")+'</div>':"")+'</div>'}
+function srcBox(e){var l=srcList();return '<div class="f"><label>Where from / who gave it</label><input id="a_src" list="src_l" value="'+esc(e.id?e.src:(S.lastSrc||""))+'" placeholder="Goodwill, estate sale\u2026"><datalist id="src_l">'+l.map(function(x){return '<option value="'+esc(x)+'">'}).join("")+'</datalist>'+(l.length?'<div class="cg">'+l.slice(0,6).map(function(x){return '<button type="button" class="chip" data-s="'+esc(x)+'" onclick="pickSrc(this)">'+esc(x)+'</button>'}).join("")+'</div>':"")+'</div>'}
 function mdv(){try{var r=JSON.parse(localStorage.getItem("mdate"));if(r&&r.day===today()&&r.d)return r.d}catch(e){}return today()}
 function setMD(v){try{localStorage.setItem("mdate",JSON.stringify({d:v,day:today()}))}catch(e){}}
 var PHS=[],BIG=[],RI=null,AUTO=false,AT="",PHid=null,FQ="",FC="",FB="",FD="",FS="",RP="",RB=null,rdl=null;
@@ -315,7 +336,7 @@ if(c&&c!=="other")tg.push("#"+c);wds(nm).slice(0,6).forEach(function(w){if(tg.in
 var d=p==="eBay"?nm+"\n\n"+(i.note?i.note+"\n\n":"")+"Please review the photos for condition and message me with any questions before buying.":"\u2728 "+nm+"\n"+(i.note?i.note+"\n":"")+"\nPre-loved and ready for a new home. Message me with any questions!\n\n"+tg;
 return{t:t,d:d}}
 function lpanel(i){var ps=plats(i.plat).length?plats(i.plat):["eBay","Depop","Vinted","Poshmark","Whatnot"];if(ps.indexOf(LP)<0)LP=ps[0];var x=ltext(i,LP);
-return '<div id="lt_p" style="margin-top:10px"><label>Draft for</label><div style="display:flex;flex-wrap:wrap;gap:6px">'+ps.map(function(p){return '<button type="button" class="chip lc'+(p===LP?' on':'')+'" data-p="'+esc(p)+'" onclick="lset(\''+i.id+'\',\''+p+'\')">'+esc(p)+'</button>'}).join("")+'</div><label>Title <span class="mut" id="lt_c">'+x.t.length+' characters</span></label><textarea id="lt_t" rows="2" style="width:100%">'+esc(x.t)+'</textarea><p><button class="b s" onclick="cpT(\'lt_t\')">Copy title</button></p><label>Description</label><textarea id="lt_d" rows="7" style="width:100%">'+esc(x.d)+'</textarea><p><button class="b s" onclick="cpT(\'lt_d\')">Copy description</button></p><div class="mut">A starting draft built only from your title, notes and category. Add size, brand and condition before you post.</div></div>'}
+return '<div id="lt_p" style="margin-top:10px"><label>Draft for</label><div class="cg">'+ps.map(function(p){return '<button type="button" class="chip lc'+(p===LP?' on':'')+'" data-p="'+esc(p)+'" onclick="lset(\''+i.id+'\',\''+p+'\')">'+esc(p)+'</button>'}).join("")+'</div><label>Title <span class="mut" id="lt_c">'+x.t.length+' characters</span></label><textarea id="lt_t" rows="2" style="width:100%">'+esc(x.t)+'</textarea><p><button class="b s" onclick="cpT(\'lt_t\')">Copy title</button></p><label>Description</label><textarea id="lt_d" rows="7" style="width:100%">'+esc(x.d)+'</textarea><p><button class="b s" onclick="cpT(\'lt_d\')">Copy description</button></p><div class="mut">A starting draft built only from your title, notes and category. Add size, brand and condition before you post.</div></div>'}
 function lset(id,p){LP=p;var i=S.items.filter(function(x){return x.id===id})[0],x=ltext(i,p);$("lt_t").value=x.t;$("lt_d").value=x.d;$("lt_c").textContent=x.t.length+" characters";document.querySelectorAll("#lt_p .lc").forEach(function(b){b.classList.toggle("on",b.getAttribute("data-p")===p)})}
 function cpT(id){var t=$(id);t.focus();t.select();try{document.execCommand("copy")}catch(e){}try{navigator.clipboard.writeText(t.value)}catch(e){}alert("Copied")}
 function qnet(y,m1,m2){function iq(d){if(!d||yrOf(d)!==y)return false;var mo=parseInt(d.slice(5,7));return mo>=m1&&mo<=m2}var v=0;
