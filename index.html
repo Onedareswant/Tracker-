@@ -163,7 +163,7 @@ h+='<div class="card it" data-q="'+esc(qs)+'" data-c="'+esc(i.cat||"Clothing")+'
 '<span class="tag">'+(sold?"Sold":"In stock")+'</span></div>'+
 '<div class="mut">Cost '+m(n(i.cost))+(sold?' · Sold '+m(n(i.price))+(i.so?' on '+esc(i.so):'')+' · Fees '+m(n(i.fees))+' · Ship '+m(n(i.ship)):'')+'</div>'+
 (sold?'<div class="'+(profit(i)>=0?"pos":"neg")+'"><b>Profit '+m(profit(i))+'</b>'+(n(i.price)>0?' <span class="mut">('+Math.round(profit(i)/n(i.price)*100)+'% margin'+(n(i.cost)>0?', '+Math.round(profit(i)/n(i.cost)*100)+'% return':'')+')</span>':'')+'</div>':'')+
-'<p>'+(sold||sell===i.id?'':'<button class="b" onclick="sell=\''+i.id+'\';render()">Mark sold</button> ')+'<button class="b s" onclick="edit=\''+i.id+'\';sell=null;render();goTop()">Edit</button> <button class="b s" onclick="LT=LT===\''+i.id+'\'?null:\''+i.id+'\';render()">Listing text</button> <button class="b x" onclick="delItem(\''+i.id+'\')">'+(dl===i.id?"Tap again to delete":"Delete")+'</button></p>'+(sell===i.id&&!sold?sf(i):'')+(LT===i.id?lpanel(i):'')+'</div>'});
+'<p>'+(sold||sell===i.id?'':'<button class="b" onclick="sell=\''+i.id+'\';render()">Mark sold</button> ')+(sold?'<button class="b s" onclick="backStock(\''+i.id+'\')">'+(rtn===i.id?"Tap again to confirm":"Back in stock")+'</button> ':'')+'<button class="b s" onclick="edit=\''+i.id+'\';sell=null;render();goTop()">Edit</button> <button class="b s" onclick="LT=LT===\''+i.id+'\'?null:\''+i.id+'\';render()">Listing text</button> <button class="b x" onclick="delItem(\''+i.id+'\')">'+(dl===i.id?"Tap again to delete":"Delete")+'</button></p>'+(sell===i.id&&!sold?sf(i):'')+(LT===i.id?lpanel(i):'')+'</div>'});
 return h}
 var H={t:"",c:""};
 function hav(){var t=n(H.t),c=n(H.c);return t>0&&c>0?(Math.round(t/c*100)/100).toFixed(2):""}
@@ -239,7 +239,10 @@ function addM(t){if(ME){var m=n($("m_m").value),p0=$("m_p").value.trim(),d0=$("m
 S.miles.forEach(function(x){if(x.id===ME){if(m!==x.m)x.e=null;x.m=m;x.d=d0;x.p=p0;x.t=t}});ME=null;save();render();return}
 var c=mcalc(),p=$("m_p").value.trim();if(!c||!(c.m>0)||!p||!$("m_d").value){alert("Enter a date, a purpose, and either a higher odometer reading or trip miles");return}
 S.miles.push({id:uid(),d:$("m_d").value,m:c.m,e:c.e,p:p,t:t});save();render()}
-var mdl=null,edl=null;
+var mdl=null,edl=null,rtn=null;
+function backStock(id){if(rtn!==id){rtn=id;render();return}rtn=null;
+S.items.forEach(function(i){if(i.id!==id||!i.sd)return;var k=mk(i.sd);i.note=(i.note?i.note+" | ":"")+"Returned "+today()+" (was sold "+i.sd+" for $"+i.price+")";i.rets=(i.rets||0)+1;i.sd="";i.price="";i.fees="";i.ship="";i.so="";if(S.hist&&S.hist[k])S.hist[k].p=mprofit(k)});
+save();render()}
 function delM(id){if(mdl!==id){mdl=id;render();return}mdl=null;S.miles=S.miles.filter(function(x){return x.id!==id});save();render()}
 
 function plt(){var rows={};PLATS.forEach(function(p){rows[p]={c:0,s:0,f:0}});var un={c:0,s:0,f:0},ys={};ys[yr]=1;
