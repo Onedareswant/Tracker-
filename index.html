@@ -229,7 +229,7 @@ var h='<div class="card"><div class="g">'+
 '<div class="f"><label>…or trip miles (no odometer)</label><input type="number" step="0.1" inputmode="decimal" id="m_m" value="'+esc(ex.m)+'" oninput="mpv()"></div>'+
 '<div class="f"><label>Destination / business purpose</label><input id="m_p" value="'+esc(ex.p)+'" placeholder="Sourcing inventory: Savers (round trip from home)"></div></div>'+
 '<p><button class="b" onclick="addM(\'Business\')">'+(ex.id?"Save as Business":"Log Business")+'</button> <button class="b s" onclick="addM(\'Personal\')">'+(ex.id?"Save as Personal":"Personal")+'</button> <button class="b s" onclick="addM(\'Commute\')">'+(ex.id?"Save as Commute":"Commute")+'</button>'+(ex.id?' <button class="b s" onclick="ME=null;render()">Cancel</button>':'')+'</p><div class="mut" id="m_pv">Calculated odometer: '+Math.round(curOdo())+'</div></div>'+
-'<div class="card"><b>Schedule C, Part IV (line 44), '+yr+'</b>'+st("a) Business miles",r1(sb),"")+st("b) Commuting miles",r1(sc),"")+st("c) Other personal miles",r1(sp),"")+
+'<div id="mp_c">'+mpcard()+'</div>'+'<div class="card"><b>Schedule C, Part IV (line 44), '+yr+'</b>'+st("a) Business miles",r1(sb),"")+st("b) Commuting miles",r1(sc),"")+st("c) Other personal miles",r1(sp),"")+
 '<div class="mut">Odometer math starts on your tracking start date; earlier trips still count for the deduction. Rates: 72.5¢ before Jul 1, 2026, 76¢ after. Commuting to a regular workplace isn’t deductible. Line 44 covers the whole year, so add miles from before this log started.</div></div>';
 var dm={};S.miles.forEach(function(x){var q=dm[x.d]||(dm[x.d]={c:0,m:0});q.c++;q.m+=x.m});
 if(MFD&&!dm[MFD])MFD=null;
@@ -240,6 +240,13 @@ h+='</div>';
 trips().reverse().forEach(function(x){if(MFD&&x.d!==MFD)return;var t=ty(x);
 h+='<div class="card"><div class="row"><div><b>'+x.m+' mi</b> · '+(t==="Business"?m(x.m*rt(x.d)):"no deduction")+'<div class="mut">'+esc(x.d)+' · '+esc(x.p)+(x.e!=null?' · odo '+x.e:'')+'</div></div><div><button class="b s" onclick="ME=\''+x.id+'\';render();goTo(\'m_m\')">Edit</button> <button class="b s" onclick="cycM(\''+x.id+'\')">'+t+'</button> <button class="b x" onclick="delM(\''+x.id+'\')">'+(mdl===x.id?"Tap again to delete":"×")+'</button></div></div></div>'});
 return h}
+var MPE=false,MPD=null;
+function mpcard(){var L=S.mp||[];return '<div class="card"><b>Saved trips</b> <span class="mut">(tap one to fill in the name and miles)</span>'+(L.length?'<div class="cg">'+L.map(function(x){return '<button type="button" class="chip'+(MPE&&MPD===x.id?' on':'')+'" onclick="'+(MPE?'mpDel':'mpUse')+'(\''+x.id+'\')">'+(MPE?(MPD===x.id?'Tap again to delete':'\u00d7 '+esc(x.n)):esc(x.n)+' \u00b7 '+x.m+' mi')+'</button>'}).join("")+'</div>':'<div class="mut" style="margin-top:6px">None yet. Type a purpose and miles in the form above, then tap Save current as a saved trip.</div>')+'<p><button type="button" class="b s" onclick="mpSave()">Save current as a saved trip</button>'+(L.length?' <button type="button" class="b s" onclick="MPE=!MPE;MPD=null;mpRef()">'+(MPE?"Done":"Edit saved")+'</button>':'')+'</p></div>'}
+function mpRef(){var e=$("mp_c");if(e)e.innerHTML=mpcard()}
+function mpUse(id){var x=(S.mp||[]).filter(function(y){return y.id===id})[0];if(!x)return;$("m_p").value=x.n;$("m_m").value=x.m;if($("m_o"))$("m_o").value="";mpv()}
+function mpSave(){var nm=$("m_p").value.trim(),c=mcalc();if(!nm||!c||!(c.m>0)){alert("Type the purpose and the miles in the form first");return}
+S.mp=(S.mp||[]).filter(function(y){return y.n.toLowerCase()!==nm.toLowerCase()});S.mp.push({id:uid(),n:nm,m:c.m});save();mpRef();alert("Saved \u201c"+nm+"\u201d")}
+function mpDel(id){if(MPD!==id){MPD=id;mpRef();return}MPD=null;S.mp=(S.mp||[]).filter(function(y){return y.id!==id});if(!S.mp.length)MPE=false;save();mpRef()}
 function cycM(id){S.miles.forEach(function(x){if(x.id===id)x.t=MT[(MT.indexOf(ty(x))+1)%3]});save();render()}
 function addM(t){if(ME){var m=n($("m_m").value),p0=$("m_p").value.trim(),d0=$("m_d").value;if(!(m>0)||!p0||!d0){alert("Enter a date, a purpose and the miles");return}
 S.miles.forEach(function(x){if(x.id===ME){if(m!==x.m)x.e=null;x.m=m;x.d=d0;x.p=p0;x.t=t}});ME=null;save();render();return}
