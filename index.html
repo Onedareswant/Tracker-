@@ -281,8 +281,17 @@ function binOf(c){for(var i=0;i<BINS.length;i++)if(BINS[i][0]===c)return BINS[i]
 var RSO=false;
 function rsold(){RSO=!RSO;FS=RSO?"sold":"";render()}
 function dsum(){if(!FD)return"";var L=S.items.filter(function(i){return FD==="__nodate"?!i.bd:i.bd===FD}),c=0,sold=0,sales=0,pr=0,fe=0;L.forEach(function(i){c+=n(i.cost);if(i.sd){sold++;sales+=n(i.price);pr+=profit(i);fe+=n(i.fees)+n(i.ship)}});
-return '<div style="margin-top:10px"><b>'+(FD==="__nodate"?"No date":esc(FD))+' total</b>'+st("Items",String(L.length),sold+" sold, "+(L.length-sold)+" in stock")+st("Total cost (all items)",m(c),"")+st("Sales so far",m(sales),"")+st("<b>Profit so far</b>","<b class=\""+(pr>=0?"pos":"neg")+"\">"+m(pr)+"</b>","sold items only")+st("Net after all costs",m(sales-fe-c),"sales \u2212 fees \u2212 shipping \u2212 cost of every item")+'</div>'}
-function dpick(b){var d=b.getAttribute("data-d");FD=FD===d?"":d;filt()}
+return '<div style="margin-top:10px"><b>'+(FD==="__nodate"?"No date":esc(FD))+' total</b>'+st("Items",String(L.length),sold+" sold, "+(L.length-sold)+" in stock")+st("Total cost (all items)",m(c),"")+st("Sales so far",m(sales),"")+st("<b>Profit so far</b>","<b class=\""+(pr>=0?"pos":"neg")+"\">"+m(pr)+"</b>","sold items only")+st("Net after all costs",m(sales-fe-c),"sales \u2212 fees \u2212 shipping \u2212 cost of every item")+
+'<div style="margin-top:12px"><label>Change the cost of all '+L.length+' items from this day ($)</label><input type="number" step="0.01" inputmode="decimal" id="bc_v" value="'+esc(BCV)+'" oninput="BCV=this.value;BCC=null;bcl()" placeholder="e.g. 3.50"><p><button type="button" class="b s" id="bc_e" onclick="bulkCost(\'each\')">'+(BCC==="each"?"Tap again to confirm":"Set each item to this")+'</button> <button type="button" class="b s" id="bc_s" onclick="bulkCost(\'split\')">'+(BCC==="split"?"Tap again to confirm":"Split this total across them")+'</button></p><div class="mut">Replaces the cost on every item from this day, sold ones too, so profit updates.</div></div></div>'}
+var BCV="",BCC=null;
+function bcl(){var e=$("bc_e"),t=$("bc_s");if(e)e.textContent="Set each item to this";if(t)t.textContent="Split this total across them"}
+function bulkCost(mode){var v=$("bc_v").value;if(v===""||isNaN(parseFloat(v))||parseFloat(v)<0){alert("Enter an amount first");return}BCV=v;
+if(BCC!==mode){BCC=mode;filt();return}BCC=null;
+var L=S.items.filter(function(i){return FD==="__nodate"?!i.bd:i.bd===FD});if(!L.length)return;var a=n(v),N=L.length,cents=Math.round(a*100),base=Math.floor(cents/N),rem=cents-base*N,ks={};
+L.forEach(function(i,ix){var c=mode==="each"?Math.round(a*100):base+(ix<rem?1:0);i.cost=(c/100).toFixed(2);if(i.sd)ks[mk(i.sd)]=1});
+Object.keys(ks).forEach(function(k){if(S.hist&&S.hist[k])S.hist[k].p=mprofit(k)});
+BCV="";save();render();alert("Updated cost on "+N+" items")}
+function dpick(b){BCC=null;BCV="";var d=b.getAttribute("data-d");FD=FD===d?"":d;filt()}
 function syncB(){document.querySelectorAll(".dc").forEach(function(b){b.classList.toggle("on",b.getAttribute("data-d")===FD)});document.querySelectorAll(".bc").forEach(function(b){b.classList.toggle("on",b.getAttribute("data-c")===FB)})}
 function bpick(b){var c=b.getAttribute("data-c");FB=FB===c?"":c;filt()}
 function nextSku(){var u={};S.items.forEach(function(i){if(/^\d{4}$/.test(i.sku||""))u[+i.sku]=1});for(var n=1;n<=2000;n++)if(!u[n])return("000"+n).slice(-4);return""}
